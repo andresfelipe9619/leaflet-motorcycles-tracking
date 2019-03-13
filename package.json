@@ -1,0 +1,25 @@
+{
+  "name": "leaflet-motorcycles-tracking",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andresfelipe9619/leaflet-motorcycles-tracking.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/andresfelipe9619/leaflet-motorcycles-tracking/issues"
+  },
+  "homepage": "https://github.com/andresfelipe9619/leaflet-motorcycles-tracking#readme",
+  "dependencies": {
+    "cookie-parser": "^1.4.4",
+    "express": "^4.16.4",
+    "http-errors": "^1.7.2",
+    "morgan": "^1.9.1"
+  }
+}
