@@ -1,43 +1,38 @@
-var createError = require("http-errors");
-var express = require("express");
-var path = require("path");
-var cookieParser = require("cookie-parser");
-var logger = require("morgan");
+var express = require("express"); // require Express
+var router = express.Router(); // setup usage of the Express router engine
 
-var indexRouter = require("./routes/index");
-var usersRouter = require("./routes/users");
-var contacts = require("./routes/contact");
-var app = express();
+/* PostgreSQL and PostGIS module and connection setup */
+const { Client, Query } = require("pg");
 
-process.env.DATABASE_URL =
-    "postgres://qiqtfyygcanagi:0a3ae7218dee58422b16c2da4a448972f6561e8f7384046ef2b8928ef7db978c@ec2-107-20-167-11.compute-1.amazonaws.com:5432/d5fvcomjbe9ogl";
-// view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "hbs");
+// Setup connection
+var username = "docker"; // sandbox username
+var password = "docker"; // read only privileges on our table
+var host = "localhost:25432";
+var database = "mototrip"; // database name
+var conString =
+  "postgres://" + username + ":" + password + "@" + host + "/" + database; // Your Database Connection
 
-app.use(logger("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
+// Set up your database query to display GeoJSON
+var coffee_query =
+  "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json((id, name)) As properties FROM clientes As lg) As f) As fc";
 
-app.use("/", indexRouter);
-app.use("/users", usersRouter);
-app.use("/contacts", contacts);
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
-    next(createError(404));
+/* GET home page. */
+router.get("/", function(req, res, next) {
+  res.render("index", { title: "Express" });
 });
 
-// error handler
-app.use(function (err, req, res, next) {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get("env") === "development" ? err : {};
-
-    // render the error page
-    res.status(err.status || 500);
-    res.render("error");
+/* GET Postgres JSON data */
+router.get("/data", function(req, res) {
+  var client = new Client(conString);
+  client.connect();
+  var query = client.query(new Query(coffee_query));
+  query.on("row", function(row, result) {
+    result.addRow(row);
+  });
+  query.on("end", function(result) {
+    res.send(result.rows[0].row_to_json);
+    res.end();
+  });
 });
 
-module.exports = app;
+module.exports = router;
