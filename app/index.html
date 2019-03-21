@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <title>8.4Leaflet</title>
+    <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
+        integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+    <script src="lib/leaflet/leaflet.js"></script>
+
+    <link rel="stylesheet" href="lib/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.css" />
+    <script src="lib/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.js"></script>
+
+    <!--  Nuevas librerías para el manejo de formulario   -->
+    <!-- https://getbootstrap.com/docs/4.1/getting-started/introduction/ -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+        integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"
+        integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T"
+        crossorigin="anonymous"></script>
+
+    <style>
+        .container {
+            margin-top: 65px
+        }
+    </style>
+
+</head>
+
+<body>
+    <!--  *******************  Barra de Navegacion **********************-->
+
+    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Proyecto SIG 2</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#inicio-header">INICIO
+                        <span class="sr-only">(current)</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#gismodel-header">GISMODEL
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#somos-header">QUIENES SOMOS
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#contacto-header">CONTACTO
+                    </a>
+                </li>
+            </ul>
+
+        </div>
+    </nav>
+
+    <div style="margin-top: 65px">
+        <div class="row">
+            <div class="col-md-2">
+
+                <div class="card" style="width: 14rem; margin-top: 40px">
+                    <div class="card-header">
+                        Acciones
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <button id="botonreportar" type="button" class="btn btn-primary">
+                                Reportar Hueco
+                            </button>
+                        </li>
+                        <li class="list-group-item">
+                            <button id="botonreportados" type="button" class="btn btn-primary">
+                                Huecos Reportados
+                            </button>
+                        </li>
+                        <li class="list-group-item">
+                            <button id="botonubicacion" type="button" class="btn btn-primary">
+                                Mi Ubicacion
+                            </button>
+                        </li>
+                        <li class="list-group-item">
+                            Distancia entre dos Huecos
+                            <div class="form-group">
+                                <label for="dishueco1">Id 1:</label>
+                                <input type="text" class="form-control" id="dishueco1" aria-describedby="emailHelp"
+                                    placeholder="">
+                                <label for="dishueco2">Id 2:</label>
+                                <input type="text" class="form-control" id="dishueco2" aria-describedby="emailHelp"
+                                    placeholder="">
+                            </div>
+                            <button id="botondistancia" type="button" class="btn btn-primary">
+                                Hallar distancia
+                            </button>
+                        </li>
+                        <li class="list-group-item">
+                            Huecos cercanos a una
+                            <div class="form-group">
+                                <label for="input_lat">Universidad</label>
+                                <input type="text" class="form-control" id="input_lat" aria-describedby="emailHelp"
+                                    placeholder="">
+                            </div>
+                            <button id="botonubicacion" type="button" class="btn btn-primary">
+                                Hallar huecos
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <ul>
+                </ul>
+            </div>
+            <div class="col-md-10">
+                <div id="mapid" style="height: 680px; width:90%">
+                </div>
+                <br />
+                <ul>
+                    <li id="myli"></li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-10" style="margin: auto; margin-top: 15px">
+                <div class="jumbotron">
+
+                    <h1 class="text-center" id="gismodel-header">GISMODEL</h1>
+                    <p>La integración de la tecnología,la información espacial y la ciencia e investigación facultan la
+                        posibilidad de generar
+                        conocimiento que permite apoyar la toma de decisiones en cualquier àmbito. Todo lo que existe en
+                        alguna parte de la
+                        superficie de la tierra y en un momento de su historia, es susceptible de ser representado en
+                        una base de datos espacial
+                        y ser integrado a un Sistema de Información Geográfica (SIG). Esto constituye una herramienta
+                        poderosa para entender
+                        las relaciones espaciales entre los elementos, sus dependencias, efectos e impactos con el
+                        entorno, los recursos, los
+                        medios naturales, y la interacción de ellos con el hombre o la sociedad.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-10" style="margin: auto; margin-top: 15px">
+                <div class="jumbotron">
+
+                    <h1 class="text-center" id="somos-header">QUIENES SOMOS</h1>
+                    <h2>Sistema de gestion de Quejas y Reclamos de Huecos en las vias de la Ciudad de Cali</h2>
+                    <p>Somos un grupo que desarrolló un proyecto con el objetivo de generar un aplicativo en donde el
+                        ciudadano pueda incluir
+                        en línea la localización y características del de la falla reconocida, y subir la información
+                        relevante que permita
+                        inventariar y hacer el seguimiento de dichas fallas reportadas. Disponer de una herramienta de
+                        consulta para los ciudadanos
+                        que deseen conocer el estado actual de un determinado tema de fallas en los servicios de la
+                        alcaldía o de EMCALI, a
+                        través de una consulta que acceda a la base de datos de la ciudad, y que permita generar el
+                        reporte de la consulta
+                        con al menos 5 criterios de búsqueda anidados Universidad del Valle UNIVERSIDAD DEL VALLE
+                        Dirección: PBX: Cali - Colombia
+                        Ciudad Universitaria Meléndez +57 2 3212100 O 1994 - 2018 Calle 13 # 100-00 A.A.25360 Sede San
+                        Fernando Calle 4B N°
+                        36-00 Redes Sociales:
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row  ">
+            <div class="col-md-10" style="margin: auto; margin-top: 15px">
+                <!-- <div class="jumbotron"> -->
+                <h1 class="text-center" id="contacto-header">CONTACTO</h1>
+                <br>
+                <div class="row justify-content-md-center">
+                    <div class="col-md-3 ">
+                        <h3>Estudiantes</h3>
+                        <p>Luis Alfonso Cardona Vargas</p>
+                        <p>Mayra Alejandra Sanchez Mejia</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3>Telefonos</h3>
+                        <p>(+57) 318 283 2642</p>
+                        <p>(+57) 313 770 8559</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3>Correos</h3>
+                        <p>luis.alfonso.cardona@correounivalle.edu.co</p>
+                        <p>mayra.sanchez@correounivalle.edu.co</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <br>
+
+                    <div class="col-md-6" style="margin: auto; margin-top: 15px">
+                        <h2 id="contacto-header">Escribenos</h2>
+                        <br>
+                        <form action="post">
+                            <div class="form-group">
+                                <input type="text" placeholder="Nombre" class="form-control" name="nombre">
+                            </div>
+
+                            <div class="form-group">
+                                <input type="text" placeholder="Correo" class="form-control" name="correo">
+                            </div>
+
+                            <div class="form-group">
+                                <input type="text" placeholder="Organizacion" class="form-control" name="organizacion">
+                            </div>
+
+                            <div class="form-group">
+                                <textarea name="mensaje" placeholder="Mensaje" class="form-control" id="mensaje"
+                                    cols="30" rows="6"></textarea>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+                <!-- </div> -->
+            </div>
+
+        </div>
+    </div>
+    </div>
+
+    <br>
+
+    <div>
+
+    </div>
+    <!--  *******************  Modal  Captura coord. **********************-->
+
+
+
+    <div class="modal fade" id="formulariomodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">
+                        <p id="titulomodal"></p>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <form>
+
+                        <div class="form-group">
+                            <label for="input_lat">Latitud:</label>
+                            <input type="text" class="form-control" id="input_lat" aria-describedby="emailHelp"
+                                placeholder="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input_long">Longitud:</label>
+                            <input type="text" class="form-control" id="input_lon" placeholder="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input_nom">Nombre:</label>
+                            <input type="text" class="form-control" id="input_nom" placeholder="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input_fecha">Fecha:</label>
+                            <input type="date" class="form-control" id="input_fecha" placeholder="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input_tipo">Tipo</label>
+                            <select class="form-control" id="input_tipo">
+                                <option value="H">Hueco</option>
+                                <option value="R">Robo</option>
+                                <option value="D">Daños</option>
+                                <option value="S">Semaforo</option>
+
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input_desc">Descripcion:</label>
+                            <input type="text" class="form-control" id="input_desc" placeholder="">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input_foto">Foto</label>
+                            <input type="file" class="form-control-file" id="input_foto" accept="image/*">
+                        </div>
+
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="enviarform">Enviar Formulario</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    <script>
+        var basemaps =
+        {
+            Grayscale: L.tileLayer('http://{s}.tiles.wmflabs.org/bw-mapnik/{z}/{x}/{y}.png',
+                {
+                    maxZoom: 18,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }),
+            Streets: L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                })
+        };
+        var mymap = L.map('mapid').setView([3.4610648, -76.5363028], 12);
+        var wmsLayer6 = L.tileLayer.wms('http://localhost:8080/geoserver/wms?', {
+            layers: 'Proyectosig:clinicashospitales',
+            attribution: 'hospitales',
+            format: 'image/png',
+            transparent: true
+        });
+        var wmsLayer1 = L.tileLayer.wms('http://localhost:8080/geoserver/wms?', {
+            layers: 'Proyectosig:eventos_huecos',
+            attribution: 'huecos del municipio de cali',
+            format: 'image/png',
+            transparent: true
+        });
+        var wmsLayer7 = L.tileLayer.wms('http://localhost:8080/geoserver/wms?', {
+            layers: 'Proyectosig:vandalismo',
+            attribution: 'vandalismo',
+            format: 'image/png',
+            transparent: true
+        });
+        // var wmsLayer2 = L.tileLayer.wms('http://idesc.cali.gov.co:8081/geoserver/wms?', {
+        // 	layers: 'idesc:mc_manzanas',
+        // 	attribution: 'Manzanas Cali',
+        // 	format: 'image/png',
+        // 	transparent: true
+        // });
+        var wmsLayer3 = L.tileLayer.wms('http://localhost:8080/geoserver/wms?', {
+            layers: 'Clase10_sig3:barrios',
+            attribution: 'Barrios Cali',
+            format: 'image/png',
+            transparent: true
+        });
+        var wmsLayer4 = L.tileLayer.wms('http://localhost:8080/geoserver/wms?', {
+            layers: 'Clase10_sig3:viasvalle2ll',
+            attribution: 'Vias Cali',
+            format: 'image/png',
+            transparent: true
+        });
+        basemaps.Grayscale.addTo(mymap);
+        wmsLayer1.addTo(mymap);
+        // wmsLayer2.addTo(mymap);
+        wmsLayer3.addTo(mymap);
+        wmsLayer4.addTo(mymap);
+        wmsLayer7.addTo(mymap);
+        wmsLayer6.addTo(mymap);
+        var groupedOverlays = {
+            "Capas Municipio": {
+                // "Manzanas": wmsLayer2
+            }
+            ,
+            "Capas propias": {
+                "Huecos": wmsLayer1,
+                "Barrios": wmsLayer3,
+                "Vias departamentales": wmsLayer4,
+                "Hospitales": wmsLayer6,
+                "vandalismo": wmsLayer7
+            }
+        };
+        L.control.groupedLayers(basemaps, groupedOverlays).addTo(mymap);
+        var popup = L.popup();
+        function onLocationFound(e) {
+            L.marker(e.latlng).addTo(mymap)
+                .bindPopup("You are here").openPopup();
+        }
+        function onLocationError(e) {
+            alert(e.message);
+        }
+        $("#botonubicacion").on("click", function () {
+            mymap.on('locationfound', onLocationFound);
+            mymap.locate({ setView: true, maxZoom: 16 });
+        })
+        function onMapClick(e) {
+            var lat = e.latlng.lat.toFixed(5);
+            var lon = e.latlng.lng.toFixed(5);
+            $('#formulariomodal').modal();
+            $("#titulomodal").text("Formulario para (" + lat + "," + lon + ")");
+            $("#input_lat").val(lat);
+            $("#input_lat").prop('disabled', true);
+            $("#input_lon").val(lon);
+            $("#input_lon").prop('disabled', true);
+            var now = new Date();
+            var day = ("0" + now.getDate()).slice(-2);
+            var month = ("0" + (now.getMonth() + 1)).slice(-2);
+            var today = now.getFullYear() + "-" + (month) + "-" + (day);
+            $('#input_fecha').val(today);
+        }
+        $("#botonreportar").on("click", function () {
+            mymap.once('click', onMapClick);
+        })
+        $("#botonreportados").on("click", function (e) {
+            e.preventDefault()
+            console.log('clicked')
+            $.ajax({
+                url: "php/leer.php",
+                type: "get",
+                success: function (response) {
+                    console.log(response);
+                    // window.location.reload(false);
+                    $("#myli").val = response
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                }
+            });
+
+        })
+        $("#botondistancia").on("click", function (e) {
+            e.preventDefault()
+            console.log('clicked')
+            var hueco1 = $("#dishueco1").val();
+            var hueco2 = $("#dishueco2").val();
+            $.ajax({
+                url: "php/leerHuecos.php",
+                type: "get",
+                success: function (response) {
+                    console.log(response);
+                    // window.location.reload(false);
+                    $("#myli").val = response
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown);
+                }
+            });
+
+        })
+        $("#enviarform").on("click", function () {
+            var lat = $("#input_lat").val();
+            var lon = $("#input_lon").val();
+            var nom = $("#input_nom").val();
+            var tip = $("#input_tipo").val();
+            var fecha = $("#input_fecha").val();
+            var desc = $("#input_desc").val();
+            function getBase64(file) {
+                var reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function () {
+                    var base64 = reader.result;
+                    lecturadatos(base64);
+                };
+                reader.onerror = function (error) {
+                    console.log('Error: ', error);
+                };
+            }
+            var file = document.getElementById('input_foto').files[0];
+            if (file) {
+                getBase64(file);
+            } else {
+                lecturadatos('Sin Foto')
+            }
+            function lecturadatos(img) {
+                var datos = {
+                    lat: lat,
+                    lon: lon,
+                    nom: nom,
+                    tip: tip,
+                    fecha: fecha,
+                    desc: desc,
+                    foto: img
+                };
+                console.log(datos);
+                $.ajax({
+                    url: "php/agregar.php",
+                    type: "post",
+                    data: datos,
+                    success: function (response) {
+                        console.log(response);
+                        // window.location.reload(true);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        console.log(textStatus, errorThrown);
+                    }
+                });
+            }
+        })
+    </script>
+
+</body>
+
+</html>
