@@ -17,7 +17,7 @@ const conString =
 const coffee_query =
   "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json((id, nombre)) As properties FROM clientes As lg) As f) As fc";
 
-// app.use(express.static(path.join(__dirname, "./")));
+// app.use(express.static(path.join(__dirname, "./static")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
