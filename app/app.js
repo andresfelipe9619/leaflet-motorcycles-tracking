@@ -6,16 +6,16 @@ const app = express();
 const { Client, Query } = require("pg");
 
 // Setup connection
-const username = "docker"; // sandbox username
-const password = "docker"; // read only privileges on our table
-const host = "localhost:25432";
+const username = "andressuarez"; // sandbox username
+const password = ""; // read only privileges on our table
+const host = "localhost:5432";
 const database = "mototrip"; // database name
 const conString =
-  "postgres://" + username + ":" + password + "@" + host + "/" + database; // Your Database Connection
+  "postgres://" + username + "@" + host + "/" + database; // Your Database Connection
 
 // Set up your database query to display GeoJSON
 const coffee_query =
-  "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json((id, nombre)) As properties FROM clientes As lg) As f) As fc";
+  "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json((id, nombre)) As properties FROM '17_conductores_mototrip_wgs84' As lg) As f) As fc";
 
 // app.use(express.static(path.join(__dirname, "./static")));
 app.get("/", (req, res) => {
@@ -30,8 +30,8 @@ router.get("/data", (req, res) => {
     result.addRow(row);
   });
   query.on("end", result => {
-    res.send(result.rows[0].row_to_json);
-    res.end();
+    res.json(result.rows[0].row_to_json);
+    // res.end();
   });
 });
 
