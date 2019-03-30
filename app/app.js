@@ -1,37 +1,51 @@
-const express = require("express"); //
-const router = express.Router(); //
+const express = require("express");
+const router = express.Router();
 const path = require("path");
 const app = express();
-/* PostgreSQL and PostGIS module and connection setup */
 const { Client, Query } = require("pg");
 
-// Setup connection
-const username = "andressuarez"; // sandbox username
-const password = ""; // read only privileges on our table
+const username = "andres";
+const password = "andres";
+const database = "mototrip";
 const host = "localhost:5432";
-const database = "mototrip"; // database name
 const conString =
-  "postgres://" + username + "@" + host + "/" + database; // Your Database Connection
+  "postgres://" + username + ":" + password + "@" + host + "/" + database;
 
-// Set up your database query to display GeoJSON
-const coffee_query =
-  "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json((id, nombre)) As properties FROM '17_conductores_mototrip_wgs84' As lg) As f) As fc";
+const mototripQuery =
+  "SELECT row_to_json(fc) FROM ( SELECT 'FeatureCollection' As type, array_to_json(array_agg(f)) As features FROM (SELECT 'Feature' As type, ST_AsGeoJSON(lg.geom)::json As geometry, row_to_json((id, nombre, barrio)) As properties FROM paradas_mototrip_wgs As lg) As f) As fc;";
 
-// app.use(express.static(path.join(__dirname, "./static")));
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Methods", "PUT, POST, PATCH, DELETE, GET");
+    return res.status(200).json({});
+  }
+  next();
+});
+
+app.use(express.static(path.join(__dirname, "public")));
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "./static", "index.html"));
+// });
+
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "public/index.html"));
 });
 /* GET Postgres JSON data */
 router.get("/data", (req, res) => {
   var client = new Client(conString);
   client.connect();
-  var query = client.query(new Query(coffee_query));
+  var query = client.query(new Query(mototripQuery));
   query.on("row", (row, result) => {
     result.addRow(row);
   });
   query.on("end", result => {
     res.json(result.rows[0].row_to_json);
-    // res.end();
+    res.end();
   });
 });
 
