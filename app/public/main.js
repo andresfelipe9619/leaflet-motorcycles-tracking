@@ -7,12 +7,12 @@ const TOKEN =
 const URL = "http://localhost:3000";
 
 const BOUNDS = new L.LatLngBounds(
-  new L.LatLng(3.347563, -76.577372),
+  new L.LatLng(3.347563, -76.777372),
   new L.LatLng(3.520973, -76.436782)
 );
 const VISCOSITY = 1;
-const MAX_ZOOM_MAP = 14;
-const INITIAL_ZOOM = 4;
+const MAX_ZOOM_MAP = 18;
+const INITIAL_ZOOM = 12;
 const MAP_OPTIONS = {
   zoom: INITIAL_ZOOM,
   center: BOUNDS.getCenter(),
@@ -35,7 +35,7 @@ let autoCompleteData = [];
 
 // ************************ MAIN ******************
 $(document).ready(() => {
-  loadMap()
+  loadMap();
 });
 // ************************ END MAIN ******************
 
@@ -54,8 +54,18 @@ const loadMap = options => {
 };
 
 const loadMototripFeatures = async () => {
-  let result = await fetch(URL + "/data");
-  let data = await result.json();
+  let entities = [
+    "clientes",
+    "conductores",
+    // "barrios",
+    // "paradas",
+    // "rutas_mio",
+    // "rutas_petroncales",
+    // "rutas_troncales"
+  ];
+
+  let features = await Promise.all(entities.map(entity=>  fetch(`${URL}/${entity}`)))
+  let data = await features.json();
   new L.GeoJSON(data).addTo(mMap);
   // new L.GeoJSON(data, {
   //   pointToLayer,
@@ -66,47 +76,10 @@ const loadMototripFeatures = async () => {
 };
 
 const loadGroupedLayers = () => {
-  let categoryName;
-  //Get the number of zoom levels a category can take
-  // console.log("My CATEGORIES", categories);
-  let zoomLevelsPerCategory = 1;
-  // Math.ceil(
-  //   (MAX_ZOOM_MARKERS - INITIAL_ZOOM) /
-  //     Object.keys(categories.priorities).length
-  // );
   overlaysObj.priority = {};
   overlaysObj.visible = L.layerGroup(categories.visible);
   mMap.addLayer(overlaysObj.visible);
   overlaysObj.visible.eachLayer(marker => marker.openPopup());
-
-  // overlaysObj.visible.openPopup()
-  //iterate over the  categories.priorities (priorities)
-  for (categoryName in categories.priorities) {
-    let category = categories.priorities[categoryName];
-    let categoryLength = category.length;
-    //Get the number of fetures a zoom level can show from the current category
-    let featuresPerZoomLevel = Math.ceil(
-      categoryLength / zoomLevelsPerCategory
-    );
-    let splitedArray = splitBy(featuresPerZoomLevel, category);
-    console.log(
-      `[CAT-NAME=${categoryName}] ZOOM LVLS X CATEGORY=${zoomLevelsPerCategory} & FEATURES X ZOOM LVL=${featuresPerZoomLevel}`
-    );
-    let features = Object.assign({}, splitedArray);
-
-    overlaysObj.priority[categoryName] = {};
-
-    //iterate over the group of features of a category
-    for (let i in features) {
-      let categoryLayerGroup, categoryArray;
-      categoryArray = features[i];
-      categoryLayerGroup = L.featureGroup(categoryArray);
-      categoryLayerGroup.categoryName = `${categoryName}-${i}`;
-      overlaysObj.priority[categoryName][
-        `${categoryName}-${i}`
-      ] = categoryLayerGroup;
-    }
-  }
 
   //I will comment it, but it wiil help later with some debugging
   loadGroupedLayerControl();
