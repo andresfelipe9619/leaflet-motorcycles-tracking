@@ -1,0 +1,353 @@
+-- creamos otra tabla cambiando el sistema de coordendas
+
+create table vias_3115 as
+select gid, objectid, name, nomb_comun, version, toleft, fromright, toright, prefijo, fromleft, tipo_via, municipio, label,shape_leng,  
+       (ST_Transform(ST_SetSRID (geom, 4326),3115)) as the_geom
+from vias_wgs84;
+
+ALTER TABLE vias_3115
+  ADD CONSTRAINT vias_3115_pkey PRIMARY KEY(gid);
+
+VACUUM ANALYZE vias_3115
+
+--- Se crean nuevas columnas 
+
+alter table vias_3115 add column x1 double precision; 
+alter table vias_3115 add column y1 double precision;
+alter table vias_3115 add column x2 double precision; 
+alter table vias_3115 add column y2 double precision;  
+alter table vias_3115 add column "source" integer;
+alter table vias_3115 add column "target" integer;
+
+alter table vias3115 add column x1 double precision; 
+alter table vias3115 add column y1 double precision;
+alter table vias3115 add column x2 double precision; 
+alter table vias3115 add column y2 double precision;  
+alter table vias3115 add column "source" integer;
+alter table vias3115 add column "target" integer;
+
+select * from geometry_columns
+
+select updategeometrysrid('vias_3115','the_geom',3115)
+
+-- Se crean puntos en el inicio y final de cada linea 
+
+update vias3115 set x1= st_x(st_pointn(st_linemerge(geom),1));
+update vias3115 set y1= st_y(st_pointn(st_linemerge(geom),1));
+
+update vias3115 set x2= st_x(st_pointn(st_linemerge(geom),st_numpoints(st_linemerge(geom))));
+update vias3115 set y2= st_x(st_pointn(st_linemerge(geom),st_numpoints(st_linemerge(geom))));
+
+-- creamos la topologia
+
+create index ways_source_idx on vias3115("source");
+create index ways_target_idx on vias3115("target");
+
+select pgr_createtopology('vias3115',0.001,'geom','gid');
+
+select * from vias3115 
+
+
+--Crea un índice relacional en una tabla o vista. También se denomina índice de almacén 
+-- de filas porque es un índice de árbol B agrupado o no agrupado.
+
+drop index ways_source_idx on vias3115("source");
+drop index ways_target_idx on vias3115("target");
+
+alter table vias3115 add column costo double precision;
+update vias3115 set costo = st_length (geom);
+
+--- Algoritmo dijkstra
+
+
+CREATE OR REPLACE VIEW via_ruteo AS SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         costo::double precision AS cost
+                        FROM vias3115',
+                12098,28532, false, false) a LEFT JOIN vias3115 b ON (a.id2 = b.gid);
+
+
+-- Solucion taller de ruteo 
+
+--1. 
+
+-- Crear los puntos de origen  y destino 
+
+create or replace view origen1 as
+select * from cliente where cifcl = '1';
+
+create or replace view destino1 as
+select * from cliente where cifcl = '6';
+
+
+-- crear una vista para que el nodo se traslade al vertice tendiendo en cuenta el nodo que tenga mas cercano 
+
+create or REPLACE view partida1 as
+select av.id, av.the_geom from vias3115_vertices_pgr av, origen1 o 
+		order by st_distance(av.the_geom,o.geom) limit 1;
+
+create or REPLACE view llegada1 as
+select av.id, av.the_geom from vias3115_vertices_pgr av, destino1 d
+		order by st_distance(av.the_geom,d.geom) limit 1;
+
+
+CREATE OR REPLACE VIEW via_ruteo2 AS SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         costo::double precision AS cost
+                        FROM vias3115',
+                12098,28532, false, false) a LEFT JOIN vias3115 b ON (a.id2 = b.gid);
+
+
+
+--- ejercio solucionado pro valentina 
+
+SELECT seq, id1 AS node, id2 AS edge, cost FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         reverse_cost::double precision AS cost
+                        FROM viasreproyect2',
+                (select o.id::integer from (
+ select viasreproyect2_vertices_pgr.id, st_distance(viasreproyect2_vertices_pgr.the_geom,clientes.the_geom)
+ from  viasreproyect2_vertices_pgr,clientes WHERE clientes.id_clientes= '1' ORDER BY 2 ASC LIMIT 1 )as o),
+ (select d.id ::integer from (select viasreproyect2_vertices_pgr.id, st_distance(viasreproyect2_vertices_pgr.the_geom,clientes.the_geom)
+ from  viasreproyect2_vertices_pgr,clientes WHERE clientes.id_clientes= '6' order by 2 asc limit 1  )as d), false, false) 
+ a LEFT JOIN viasreproyect2 b ON (a.id2 = b.gid);
+
+
+CREATE OR REPLACE VIEW resultado_ruteo AS SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         reverse_cost::double precision AS cost
+                        FROM viasreproyect2',
+                (select o.id::integer from (
+ select viasreproyect2_vertices_pgr.id, st_distance(viasreproyect2_vertices_pgr.the_geom,clientes.the_geom),3115
+ from  viasreproyect2_vertices_pgr,clientes WHERE clientes.id_clientes= '1' ORDER BY 2 ASC LIMIT 1 )as o),
+ (select d.id ::integer from (select viasreproyect2_vertices_pgr.id, st_distance(viasreproyect2_vertices_pgr.the_geom,clientes.the_geom)
+ from  viasreproyect2_vertices_pgr,clientes WHERE clientes.id_clientes= '6' order by 2 asc limit 1  )as d), false, false) 
+ a LEFT JOIN viasreproyect2 b ON (a.id2 = b.gid);
+
+UPDATE viasreproyect2 SET reverse_cost=100 WHERE gid=4123;
+
+-------
+
+---- Otra solucion
+
+CREATE OR REPLACE FUNCTION pgr_cordenadas(
+                IN tbl varchar,
+                IN x1 double precision,
+                IN y1 double precision,
+                IN x2 double precision,
+                IN y2 double precision,
+                OUT seq integer,
+                OUT gid integer,
+                OUT cost double precision,
+                OUT geom geometry
+        )
+        RETURNS SETOF record AS
+$BODY$
+DECLARE
+        sql     text;
+        rec     record;
+        source	integer;
+        target	integer;
+        point	integer;
+        
+BEGIN
+	
+	EXECUTE 'SELECT id::integer FROM vias3115_vertices_pgr 
+			ORDER BY the_geom <-> ST_GeometryFromText(''POINT(' 
+			|| x1 || ' ' || y1 || ')'',3115) LIMIT 1' INTO rec;
+	source := rec.id;
+	
+	EXECUTE 'SELECT id::integer FROM vias3115_vertices_pgr 
+			ORDER BY the_geom <-> ST_GeometryFromText(''POINT(' 
+			|| x2 || ' ' || y2 || ')'',3115) LIMIT 1' INTO rec;
+	target := rec.id;
+
+	seq := 0;
+        sql := 'SELECT seq, id1 as node, id2 as edge, cost,
+				ST_Reverse(vias3115.the_geom) AS flip_geom FROM ' ||
+                        'pgr_dijkstra(''SELECT gid as id, source::integer, target::integer, '
+                                        || 'costo::double precision AS cost FROM '
+                                        || quote_ident(tbl) || ''', '
+                                        || source || ', ' || target 
+                                        || ' , false, false), '
+                                || quote_ident(tbl) || a 'LEFT JOIN vias3115 b ON (a.id2 = b.gid) ORDER BY seq';
+
+	point := source;
+
+        FOR rec IN EXECUTE sql
+        LOOP
+		
+		IF ( point != rec.source ) THEN
+			rec.the_geom := rec.flip_geom;
+			point := rec.source;
+		ELSE
+			point := rec.target;
+		END IF;
+
+		seq     := seq + 1;
+                gid     := rec.gid;
+                cost    := rec.cost;
+                geom    := rec.geom;
+                RETURN NEXT;
+        END LOOP;
+        RETURN;
+END;
+$BODY$
+LANGUAGE 'plpgsql' VOLATILE STRICT;
+
+create or REPLACE view prueba_cordenadas as
+SELECT * FROM pgr_cordenadas('vias3115',
+                    (select ST_X(the_geom) from partida1)  , (select ST_Y(the_geom) from partida1), 
+                    (select ST_X(the_geom) from llegada1)  , (select ST_Y(the_geom) from llegada1));
+
+DROP FUNCTION pgr_cordenadas(varchar, double precision, double precision, double precision, double precision)
+
+
+--- correccion 
+
+
+----
+
+SELECT seq, id1 AS node, id2 AS edge, cost FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         reverse_cost::double precision AS cost
+                        FROM vias3115',
+                (select o.id::integer from (
+ select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom)
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '1' ORDER BY 2 ASC LIMIT 1 )as o),
+ (select d.id ::integer from (select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom)
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '6' order by 2 asc limit 1  )as d), false, false) 
+ a LEFT JOIN vias3115 b ON (a.id2 = b.gid);
+
+
+--1. CALCULAR LA RUTA MAS CORTA ENTRE EL CLIENTE 1 Y EL CLIENTE 6
+
+CREATE OR REPLACE VIEW resultado_ruteo AS SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         costo::double precision AS cost
+                        FROM vias3115',
+                (select o.id::integer from (
+ select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom),3115
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '1' ORDER BY 2 ASC LIMIT 1 )as o),
+ (select d.id ::integer from (select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom)
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '6' order by 2 asc limit 1  )as d), false, false) 
+ a LEFT JOIN vias3115 b ON (a.id2 = b.gid);
+
+------
+
+
+
+select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom),3115
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '1' ORDER BY 2 ASC LIMIT 1
+
+ select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom)
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '6' order by 2 asc limit 1  
+
+UPDATE vias3115 SET reverse_cost=100 WHERE gid=4123;
+
+---- 2
+
+
+SELECT seq, id1 AS node, id2 AS edge, cost FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         reverse_cost::double precision AS cost
+                        FROM viasreproyect2',
+                (select o.id::integer from (
+ select viasreproyect2_vertices_pgr.id, st_distance(viasreproyect2_vertices_pgr.the_geom,clientes.the_geom)
+ from  viasreproyect2_vertices_pgr,clientes WHERE clientes.id_clientes= '1' ORDER BY 2 ASC LIMIT 1 )as o),
+ (select d.id ::integer from (select viasreproyect2_vertices_pgr.id, st_distance(viasreproyect2_vertices_pgr.the_geom,concesionario.the_geom)
+ from  viasreproyect2_vertices_pgr,concesionario WHERE concesionario.id_conce= '5' order by 2 asc limit 1  )as d), false, false) 
+ a LEFT JOIN viasreproyect2 b ON (a.id2 = b.gid);
+
+--2. CALCULAR LA RUTA MAS CORTA ENTRE EL CLIENTE 1 Y EL CONCESIONARIO 5
+
+
+SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         costo::double precision AS cost
+                        FROM vias3115',
+                (select o.id::integer from (
+ select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom)
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '1' ORDER BY 2 ASC LIMIT 1 )as o),
+ (select d.id ::integer from (select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,concesionario.geom)
+ from  vias3115_vertices_pgr,concesionario WHERE concesionario.cifc= '5' order by 2 asc limit 1  )as d), false, false) 
+ a LEFT JOIN vias3115 b ON (a.id2 = b.gid);
+
+
+ --------------
+
+select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom)
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '1' ORDER BY 2 ASC LIMIT 1 
+
+ select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,concesionario.geom)
+ from  vias3115_vertices_pgr,concesionario WHERE concesionario.cifc= '5' order by 2 asc limit 1
+
+UPDATE viasreproyect2 SET reverse_cost=100 WHERE gid=4123;
+
+
+
+--- 3-Calcular la ruta más corta entre el concesionario 3 y los clientes 1,2 y 4
+
+
+ CREATE OR REPLACE VIEW resultado_ruteo3 AS SELECT seq, node AS id1,  edge as id2 , cost, b.geom FROM pgr_dijkstra('
+			SELECT gid AS id,
+                        source::integer,
+                        target::integer,
+                        costo::double precision AS cost
+                        FROM vias3115',
+                (select d.id ::integer from (select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,concesionario.geom)
+ from  vias3115_vertices_pgr,concesionario WHERE concesionario.cifc= '3' order by 2 asc limit 1  )as d),ARRAY[(select o.id::integer from(
+ select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom) from  vias3115_vertices_pgr,cliente 
+ WHERE cliente.cifcl= '1' ORDER BY 2 ASC LIMIT 1 )as o), 
+ (select e.id::integer from (select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom) from  vias3115_vertices_pgr,cliente 
+ WHERE cliente.cifcl= '2' ORDER BY 2 ASC LIMIT 1 )as e),(select u.id::integer from (select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom) from  vias3115_vertices_pgr,cliente 
+ WHERE cliente.cifcl= '4' ORDER BY 2 ASC LIMIT 1 )as u)],
+ directed := false) as a LEFT JOIN vias3115 b ON (a.edge = b.gid);
+
+ --- 4-Cargar datos de estaciones del MIO y obtener las estaciones a 200m de la ruta comprendida entre el cliente 3 y el concesionario 4.
+
+create table punto4 AS SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+                SELECT gid AS id,
+                         source::integer,
+                         target::integer,
+                         costo::double precision AS cost
+                        FROM vias3115',
+                (select o.id::integer from (
+ select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,cliente.geom)
+ from  vias3115_vertices_pgr,cliente WHERE cliente.cifcl= '3' ORDER BY 2 ASC LIMIT 1 )as o),
+ (select d.id ::integer from (select vias3115_vertices_pgr.id, st_distance(vias3115_vertices_pgr.the_geom,concesionario.geom)
+ from  vias3115_vertices_pgr,concesionario WHERE concesionario.cifc= '4' order by 2 asc limit 1  )as d), false, false) 
+ a LEFT JOIN vias3115 b ON (a.id2 = b.gid);
+
+create or replace view buffer as select ST_buffer(p.geom,200) as bu, seq	
+from punto4 as p 
+
+select id,nombre
+from (select p.id, p.nombre, ST_contains(ST_buffer(ST_GeometryFromText('POINT(-76.5119908 3.399239)'),1000),p.geom) as t
+from paradas as p, buffer) as sub 
+where t = 't' group by id, nombre
+
+select p.id, p.nombre, ST_contains(ST_buffer(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),500),p.geom) as t
+from paradas_mototrip_wgs p
+
+
+select id,nombre
+from (select p.id, p.nombre, ST_contains(ST_buffer(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),10000),p.geom) as t
+from paradas_mototrip_wgs p) as sub 
+where t = 'f' group by id, nombre

@@ -57,14 +57,43 @@
     <div style="margin-top: 65px">
         <div class="row">
         
-            <div class="col-md-10">
-                <div id="mapid" style="height: 680px; width:90%">
+            <div class="col-md-9">
+                <div id="mapid" style="height: 680px">
                 </div>
-                <br />
-                <ul>
-                    <li id="myli"></li>
-                </ul>
             </div>
+			<div class="col-md-2">
+
+				<div class="card" style="width: 14rem; margin-top: 40px">
+					<div class="card-header">
+						Acciones
+					</div>
+					<ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                    <input id="myLocation" type="text" placeholder="coordenadas"/>
+                                    <button id="botonubicacion" type="button" class="btn btn-primary">
+                                        Mi Ubicacion
+                                    </button>
+                                </li>
+                            <li class="list-group-item">
+                                <label for="range">Rango de paradas</label>
+                                <input id="range" type="range" min="0" max="10000" step="10"/>
+                                <input type="text" id="textInput"/>
+
+                                    <button id="pardas_cercanas" type="button" class="btn btn-primary">
+                                        Buscar paradas cercanas
+                                    </button>
+                                </li>
+						<li class="list-group-item">
+								Distancia entre mi y la parada
+							<button id="botondistancia" type="button" class="btn btn-primary">
+								Hallar distancia 
+							</button>
+						</li>
+					</ul>
+				</div>
+				<ul>
+				</ul>
+			</div>
         </div>
         <div class="row">
             <div class="col-md-10" style="margin: auto; margin-top: 15px">
@@ -246,5 +275,6 @@
     crossorigin=""></script>
 <script src="./lib/leaflet-groupedlayercontrol/dist/leaflet.groupedlayercontrol.min.js"></script>
 <script src="https://unpkg.com/leaflet.vectorgrid@1.2.0"></script>
-<script src="main.js"></script></body>
+<script src="main.js"></script>
+</body>
 </html>

@@ -4,7 +4,7 @@ const TILE_LAYER =
   "https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}";
 const TOKEN =
   "pk.eyJ1IjoiYW5kcmVzOTYxOSIsImEiOiJjanExdTFodjMwYXQyNDNuMmVvazV6eHBlIn0.kOpHKEx5EBGD8YIXmKRQWA";
-const URL = "http://localhost:3000";
+const URL = "http://localhost:3001";
 
 const BOUNDS = new L.LatLngBounds(
   new L.LatLng(3.347563, -76.777372),
@@ -36,10 +36,27 @@ let autoCompleteData = [];
 // ************************ MAIN ******************
 $(document).ready(() => {
   loadMap();
+  $("#botonubicacion").on("click", () => {
+    navigator.geolocation.getCurrentPosition(location => {
+      let latlng = new L.LatLng(
+        location.coords.latitude,
+        location.coords.longitude
+      );
+      let marker = L.marker(latlng).addTo(mMap);
+      $("#myLocation").val(latlng)
+    });
+  });
+  $("#range").on("change", e => {
+    console.log("targe", e.target.value)
+    updateTextInput(e.target.value)
+  })
 });
 // ************************ END MAIN ******************
 
 // ************************ COMMAND FUNCTIONS ******************
+const updateTextInput = (val) => {
+  document.getElementById('textInput').value=val; 
+}
 const loadMap = options => {
   if (mMap) mMap = null;
   mMap = L.map("mapid", MAP_OPTIONS);
@@ -55,18 +72,22 @@ const loadMap = options => {
 
 const loadMototripFeatures = async () => {
   let entities = [
-    "clientes",
-    "conductores",
+    // "clientes",
+    // "conductores",
     // "barrios",
-    // "paradas",
+    "paradas"
     // "rutas_mio",
     // "rutas_petroncales",
     // "rutas_troncales"
   ];
 
-  let features = await Promise.all(entities.map(entity=>  fetch(`${URL}/${entity}`)))
-  let data = await features.json();
-  new L.GeoJSON(data).addTo(mMap);
+  let features = await Promise.all(
+    entities.map(entity =>
+      fetch(`${URL}/${entity}`).then(result => result.json())
+    )
+  );
+
+  features.forEach(f => new L.GeoJSON(features).addTo(mMap));
   // new L.GeoJSON(data, {
   //   pointToLayer,
   //   onEachFeature: handleOnEachFeature
