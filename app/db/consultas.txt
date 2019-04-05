@@ -26,8 +26,8 @@ create index ways_target_idx on vias_wgs84("target");
 
 select pgr_createtopology('vias_wgs84',0.001,'geom','gid');
 
-alter table vias_wgs84add column costo double precision;
-update vias_wgs84set costo = st_length (geom);
+alter table vias_wgs84 add column costo double precision;
+update vias_wgs84 set costo = st_length (geom);
 
 --- CONSULTA 1 
 

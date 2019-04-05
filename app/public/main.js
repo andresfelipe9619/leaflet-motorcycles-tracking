@@ -1,9 +1,7 @@
 // ************************ APP STATE ******************
 //CONSTANTS
-const TILE_LAYER =
-  "https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}";
-const TOKEN =
-  "pk.eyJ1IjoiYW5kcmVzOTYxOSIsImEiOiJjanExdTFodjMwYXQyNDNuMmVvazV6eHBlIn0.kOpHKEx5EBGD8YIXmKRQWA";
+const TILE_LAYER = "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
 const URL = "http://localhost:3001";
 
 const BOUNDS = new L.LatLngBounds(
@@ -43,28 +41,24 @@ $(document).ready(() => {
         location.coords.longitude
       );
       let marker = L.marker(latlng).addTo(mMap);
-      $("#myLocation").val(latlng)
+      $("#myLocation").val(latlng);
     });
   });
   $("#range").on("change", e => {
-    console.log("targe", e.target.value)
-    updateTextInput(e.target.value)
-  })
+    console.log("targe", e.target.value);
+    updateTextInput(e.target.value);
+  });
 });
 // ************************ END MAIN ******************
 
 // ************************ COMMAND FUNCTIONS ******************
-const updateTextInput = (val) => {
-  document.getElementById('textInput').value=val; 
-}
+const updateTextInput = val => {
+  document.getElementById("textInput").value = val;
+};
 const loadMap = options => {
   if (mMap) mMap = null;
   mMap = L.map("mapid", MAP_OPTIONS);
-  baseLayer = L.tileLayer(TILE_LAYER, {
-    maxZoom: 12,
-    id: "mapbox.streets",
-    accessToken: TOKEN
-  });
+  baseLayer = L.tileLayer(TILE_LAYER);
 
   baseLayer.addTo(mMap);
   loadMototripFeatures();

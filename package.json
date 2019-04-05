@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/andresfelipe9619/leaflet-motorcycles-tracking#readme",
   "dependencies": {
+    "body-parser": "^1.18.3",
     "cookie-parser": "^1.4.4",
     "express": "^4.16.4",
     "http-errors": "^1.7.2",

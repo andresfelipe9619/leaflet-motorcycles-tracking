@@ -2,14 +2,15 @@ const express = require("express");
 const router = express.Router();
 const path = require("path");
 const app = express();
-const { Client, Query } = require("pg");
-const { getParadas, getConductores, getClientes } = require("./db/queries");
-const username = "andres";
-const password = "andres";
-const database = "mototrip";
-const host = "localhost:5432";
-const conString =
-  "postgres://" + username + ":" + password + "@" + host + "/" + database;
+const bodyParser = require("body-parser");
+const {
+  doQuery,
+  getParadas,
+  getConductores,
+  getClientes,
+  getParadasBuffer,
+  loginUsuario
+} = require("./db/queries");
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -25,22 +26,22 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname, "public")));
-
+app.use(bodyParser.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
 });
-
-const doQuery = (mQuery, callback) => {
-  let client = new Client(conString);
-  client.connect();
-  let query = client.query(new Query(mQuery));
-  query.on("row", (row, result) => {
-    result.addRow(row);
-  });
-  query.on("end", result => {
-    callback(result.rows[0].json_build_object);
-  });
-};
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/login.html"));
+});
+app.post("/login", (req, res) => {
+  let login = req.body.login;
+  let [usuario, contraseña] = login;
+  let estaRegistrado = loginUsuario(usuario, contraseña);
+  if (estaRegistrado) {
+    return res.sendFile(path.join(__dirname, "public/index.html"));
+  }
+  return res.sendFile(path.join(__dirname, "public/login.html"));
+});
 
 router.get("/paradas", (req, res) => {
   doQuery(getParadas, result => {
@@ -78,8 +79,13 @@ router.get("/ruta_destino", (req, res) => {
 });
 
 router.get("/paradas_buffer", (req, res) => {
-  let { buffer, currentLocation } = req.query;
-  console.log('{buffer, currentLocation}', {buffer, currentLocation})
+  let { buffer, latitud, longitud } = req.query;
+  let point = { lat: latitud, lon: longitud };
+  let query = getParadasBuffer(point, buffer);
+  doQuery(query, result => {
+    res.json(result);
+    res.end();
+  });
 });
 
 app.use(router);
