@@ -29,39 +29,28 @@ let overlaysObj = {};
 let layersBasedOnZoom = {};
 let baseLayer = null;
 let autoCompleteData = [];
+let userLocation = null;
+let bufferRange = null;
 // ************************ END APP STATE ******************
 
 // ************************ MAIN ******************
 $(document).ready(() => {
   loadMap();
-  $("#botonubicacion").on("click", () => {
-    navigator.geolocation.getCurrentPosition(location => {
-      let latlng = new L.LatLng(
-        location.coords.latitude,
-        location.coords.longitude
-      );
-      let marker = L.marker(latlng).addTo(mMap);
-      $("#myLocation").val(latlng);
-    });
-  });
-  $("#range").on("change", e => {
-    console.log("targe", e.target.value);
-    updateTextInput(e.target.value);
-  });
+  $("#range").on("change", handleOnRangeChange);
+  $("#botonubicacion").on("click", handleOnMyLocation);
+  $("#paradas_cercanas").on("click", handleOnFindParadas);
 });
 // ************************ END MAIN ******************
 
 // ************************ COMMAND FUNCTIONS ******************
-const updateTextInput = val => {
-  document.getElementById("textInput").value = val;
-};
+
 const loadMap = options => {
   if (mMap) mMap = null;
   mMap = L.map("mapid", MAP_OPTIONS);
   baseLayer = L.tileLayer(TILE_LAYER);
 
   baseLayer.addTo(mMap);
-  loadMototripFeatures();
+  // loadMototripFeatures();
 };
 
 const loadMototripFeatures = async () => {
@@ -81,7 +70,7 @@ const loadMototripFeatures = async () => {
     )
   );
 
-  features.forEach(f => new L.GeoJSON(features).addTo(mMap));
+  features.forEach(f => new L.GeoJSON(f).addTo(mMap));
   // new L.GeoJSON(data, {
   //   pointToLayer,
   //   onEachFeature: handleOnEachFeature
@@ -95,7 +84,6 @@ const loadGroupedLayers = () => {
   overlaysObj.visible = L.layerGroup(categories.visible);
   mMap.addLayer(overlaysObj.visible);
   overlaysObj.visible.eachLayer(marker => marker.openPopup());
-
   //I will comment it, but it wiil help later with some debugging
   loadGroupedLayerControl();
 };
@@ -119,9 +107,47 @@ const loadGroupedLayerControl = () => {
   L.control.groupedLayers(mapabase, groupedOverlays).addTo(mMap);
 };
 
+const getParadasFromRange = (location, range) => {
+  if (!location || !range) return;
+  console.log("PARADAS RANGE", { location, range });
+  let [latitude, longitude] = location;
+  let url = `${URL}/paradas_buffer?latitude=${latitude}&longitude=${longitude}&buffer=${range}`;
+  fetch(url)
+    .then(res => res.json())
+    .then(geojson => {
+      geojson.features.forEach(f => new L.GeoJSON(f).addTo(mMap));
+    });
+};
+
+const updateTextInput = (element, value) => {
+  if (!element || !value) return;
+  document.getElementById(element).innerHTML = value;
+};
+
 // ************************ END COMMAND FUNCTIONS ******************
 
 // ************************ EVENT HANDLERS ******************
+const handleOnMyLocation = () => {
+  navigator.geolocation.getCurrentPosition(location => {
+    userLocation = [location.coords.latitude, location.coords.longitude];
+    let latlng = new L.LatLng(...userLocation);
+    let marker = L.marker(latlng).addTo(mMap);
+    updateTextInput("myLocation", userLocation);
+  });
+};
+
+const handleOnRangeChange = e => {
+  const { target } = e;
+  if (!target) return;
+  bufferRange = target.value;
+  updateTextInput("textInput", bufferRange);
+};
+
+const handleOnFindParadas = e => {
+  if (userLocation && bufferRange) {
+    getParadasFromRange(userLocation, bufferRange);
+  }
+};
 
 const handleOnEachFeature = (feature, layer) => {
   let { prioridad, visible } = feature.properties;

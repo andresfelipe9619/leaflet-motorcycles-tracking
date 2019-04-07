@@ -3,6 +3,7 @@ const router = express.Router();
 const path = require("path");
 const app = express();
 const bodyParser = require("body-parser");
+const PORT = 3001;
 const {
   doQuery,
   getParadas,
@@ -79,9 +80,10 @@ router.get("/ruta_destino", (req, res) => {
 });
 
 router.get("/paradas_buffer", (req, res) => {
-  let { buffer, latitud, longitud } = req.query;
-  let point = { lat: latitud, lon: longitud };
+  let { buffer, latitude, longitude } = req.query;
+  let point = { lat: latitude, lon: longitude };
   let query = getParadasBuffer(point, buffer);
+  console.log("query", query);
   doQuery(query, result => {
     res.json(result);
     res.end();
@@ -89,8 +91,8 @@ router.get("/paradas_buffer", (req, res) => {
 });
 
 app.use(router);
-app.listen(3001, () => {
-  console.log("Example app listening on port 3001!");
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
 
 module.exports = router;

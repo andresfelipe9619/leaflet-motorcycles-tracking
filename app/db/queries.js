@@ -7,7 +7,7 @@ const host = "localhost:5432";
 const conString =
   "postgres://" + username + ":" + password + "@" + host + "/" + database;
 
-const selectQuery = entity =>
+const selectQuery = (entity, subquery) =>
   ` SELECT json_build_object(
     'type', 'FeatureCollection',
     
@@ -16,11 +16,11 @@ const selectQuery = entity =>
             'type',       'Feature',
             'id',         id,
             'geometry',   ST_AsGeoJSON(ST_ForceRHR(st_transform(geom,4326)))::json,
-            'properties', jsonb_set(row_to_json(${entity})::jsonb,'{geom}','0',false)
+            'properties', jsonb_set(row_to_json(${subquery ? "resultado" : entity})::jsonb,'{geom}','0',false)
         )
     )
     )
-    FROM ${entity};
+    FROM ${subquery ? `(${subquery}) resultado` : entity};
    `;
 
 const getParadas = selectQuery("paradas_mototrip_wgs");
@@ -41,18 +41,19 @@ from  vias_wgs84_vertices_pgr,clientes_mototrip_wgs84 WHERE clientes_mototrip_wg
 from  vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '5' order by 2 asc limit 1  )as d), false, false) 
 a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)`;
 
-const getParadasBuffer = (point, bufer) =>
-  point &&
-  bufer &&
-  `
-select gid,nombre,st_distance(ST_GeometryFromText('POINT(${point.lat} ${
+const getParadasBuffer = (point, bufer) => {
+  if (!point && !bufer) return;
+  let subquery = `
+select p.id, p.nombre, p.geom,st_distance(ST_GeometryFromText('POINT(${point.lat} ${
     point.lon
-  })',4326),p.geom) as distancia
-from paradas_mototrip p
+    })',4326),p.geom) as distancia
+from paradas_mototrip_wgs p
 where st_intersects(p.geom,ST_buffer(ST_GeometryFromText('POINT(${point.lat} ${
     point.lon
-  })',4326),${bufer}))
-`;
+    })',4326),${bufer}))
+`
+  return selectQuery(null, subquery)
+};
 
 const loginUsuario = (usuario, contraseña) => {
   if (usuario && contraseña) {
@@ -69,7 +70,14 @@ const doQuery = (mQuery, callback) => {
     result.addRow(row);
   });
   query.on("end", result => {
-    callback(result.rows[0].json_build_object || result.rows);
+    if (result.rows) {
+      console.log("RESULT HAS ROWS", result);
+      let res =
+        (result.rows[0] && result.rows[0].json_build_object) || result.rows;
+      callback(res);
+    } else {
+      console.log("RESULT HAS NOT ROWS", result);
+    }
   });
 };
 
