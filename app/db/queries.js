@@ -45,38 +45,47 @@ const getRutaParada = (point, parada) => {
   return selectQuery(null, subquery, "seq")
 };
 
-const getRutaDestino = (point, destino) => {
+const getRutaDestino = (destino, parada) => {
 
   let subquery = `
-SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+SELECT seq, id1 AS node, id2 AS edge, cost, b.geom,  FROM pgr_dijkstra('
 SELECT gid AS id,
          source::integer,
          target::integer,
          costo::double precision AS cost
         FROM vias_wgs84',(select o.id::integer from (select vias_wgs84_vertices_pgr.id,st_distance(vias_wgs84_vertices_pgr.the_geom,
-        st_geometryFromtext('POINT(${point.lat} ${
-    point.lon
+        st_geometryFromtext('POINT(${destino.lon} ${
+    destino.lat
     })',4326)) from vias_wgs84_vertices_pgr order by st_distance LIMIT 1 ) as o),
 (select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip_wgs.geom)
-from  vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${destino}' order by 2 asc limit 1  )as d), false, false) 
+from  vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${parada}' order by 2 asc limit 1  )as d), false, false) 
 a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)`
   return selectQuery(null, subquery, "seq")
 };
 
 const getParadasBuffer = (point, bufer) => {
   if (!point && !bufer) return;
-  let subquery = `
-select p.id, p.nombre, p.geom,st_distance(ST_GeometryFromText('POINT(${point.lat} ${
-    point.lon
-    })',4326),p.geom) as distancia
+  let subquery =  `select p.gid,p.geom,p.nombre,st_distance(st_transform(ST_GeometryFromText('POINT(${point.lon} ${
+    point.lat
+    })',4326),3115),st_transform((p.geom),3115))/1000 as distancia
 from paradas_mototrip_wgs p
-where st_intersects(p.geom,ST_buffer(ST_GeometryFromText('POINT(${point.lat} ${
-    point.lon
-    })',4326),${bufer}))
-`
-  return selectQuery(null, subquery)
-};
+where st_intersects(st_transform(p.geom,3115),ST_buffer(st_transform(ST_GeometryFromText('POINT(${point.lon} ${
+    point.lat
+    })',4326),3115),${bufer}*1000))
+order by distancia`
 
+  return selectQuery(null, subquery, "gid")
+};
+// SELECT st_length(st_union(o.geom))* 10000 as precio from (SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
+// SELECT gid AS id,
+// source::integer,
+// target::integer,
+// costo::double precision AS cost
+// FROM vias_wgs84',(select o.id::integer from (select vias_wgs84_vertices_pgr.id,st_distance(vias_wgs84_vertices_pgr.the_geom,
+// st_geometryFromtext('POINT( -76.51703 3.400157)',4326)) from vias_wgs84_vertices_pgr order by st_distance LIMIT 1 ) as o),
+// (select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip_wgs.geom)
+// from vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '1' order by 2 asc limit 1 )as d), false, false) 
+// a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)) as o
 const loginUsuario = (usuario, contraseña) => {
   if (usuario && contraseña) {
     if (usuario == "andres") return true;

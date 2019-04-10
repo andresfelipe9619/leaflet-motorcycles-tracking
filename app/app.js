@@ -87,7 +87,11 @@ router.get("/ruta_parada", (req, res) => {
 });
 
 router.get("/ruta_destino", (req, res) => {
-  doQuery(getRutaDestino, result => {
+  let { parada, latitude, longitude } = req.query;
+  let destino = { lat: latitude, lon: longitude };
+  let query = getRutaDestino(destino, parada);
+  console.log('query_destino', query)
+  doQuery(query, result => {
     res.json(result);
     res.end();
   });

@@ -1,0 +1,100 @@
+
+----- Ruteo------
+
+--- Se crean nuevas columnas 
+
+alter table vias_wgs84 add column x1 double precision; 
+alter table vias_wgs84 add column y1 double precision;
+alter table vias_wgs84 add column x2 double precision; 
+alter table vias_wgs84 add column y2 double precision;  
+alter table vias_wgs84 add column "source" integer;
+alter table vias_wgs84 add column "target" integer;
+
+-- Se crean puntos en el inicio y final de cada linea 
+
+update vias_wgs84 set x1= st_x(st_pointn(st_linemerge(geom),1));
+update vias_wgs84 set y1= st_y(st_pointn(st_linemerge(geom),1));
+
+update vias_wgs84 set x2= st_x(st_pointn(st_linemerge(geom),st_numpoints(st_linemerge(geom))));
+update vias_wgs84 set y2= st_x(st_pointn(st_linemerge(geom),st_numpoints(st_linemerge(geom))));
+
+
+-- creamos la topologia
+
+create index ways_source_idx on vias_wgs84("source");
+create index ways_target_idx on vias_wgs84("target");
+
+select pgr_createtopology('vias_wgs84',0.001,'geom','gid');
+
+alter table vias_wgs84add column costo double precision;
+update vias_wgs84set costo = st_length (geom);
+
+--- CONSULTA 1 
+
+---prueba
+
+select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip.geom)
+from  vias_wgs84_vertices_pgr,paradas_mototrip WHERE paradas_mototrip.id= '1' order by 2 asc limit 1  )as d),ARRAY[(select o.id::integer from(
+select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,clientes_mototrip.geom) from  vias_wgs84_vertices_pgr,clientes_mototrip 
+WHERE clientes_mototrip.id= '1' ORDER BY 2 ASC LIMIT 1 )as o),select u.id::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,clientes_mototrip.geom) 
+from  vias_wgs84_vertices_pgr,clientes_mototrip WHERE clientes_mototrip.id= '2' ORDER BY 2 ASC LIMIT 1 )as u)],
+
+-- sulucion
+
+
+CREATE OR REPLACE VIEW resultado_ruteo1 AS SELECT seq, node AS id1,  edge as id2 , cost, b.geom FROM pgr_dijkstra('
+			SELECT gid AS id,
+                        source::integer,
+                        target::integer,
+                        costo::double precision AS cost
+                        FROM vias3115',
+                (select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip.geom)
+from  vias_wgs84_vertices_pgr,paradas_mototrip WHERE paradas_mototrip.id= '1' order by 2 asc limit 1  )as d),ARRAY[(select o.id::integer from(
+select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,clientes_mototrip.geom) from  vias_wgs84_vertices_pgr,clientes_mototrip 
+WHERE clientes_mototrip.id= '1' ORDER BY 2 ASC LIMIT 1 )as o),select u.id::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,clientes_mototrip.geom) 
+from  vias_wgs84_vertices_pgr,clientes_mototrip WHERE clientes_mototrip.id= '2' ORDER BY 2 ASC LIMIT 1 )as u)],
+ directed := false) as a LEFT JOIN vias3115 b ON (a.edge = b.gid);
+
+
+--- consulta 2
+
+
+select pm.id,pm.nombre,pm.barrio  
+from paradas_mototrip as pm,(select cl.id, st_buffer(cl.geom,5000) as bu
+from clientes_mototrip as cl
+where cl.id = 1) as x 
+where St_contains(x.bu,pm.geom)
+
+-- opcion 2 
+
+
+create or replace view buffer1 as  select cl.id, st_buffer(cl.geom,5000) as bu
+from clientes_mototrip as cl
+where cl.id = 1 
+
+select pm.id,pm.nombre,pm.barrio  
+from paradas_mototrip as pm,buffer1
+where St_contains(bu,pm.geom)
+
+
+consulta final 
+
+
+select p.gid,p.nombre,st_distance(st_transform(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),3115),st_transform(p.geom,3115)) as distancia
+from (select p.gid, p.nombre, ST_contains(st_setsrid(ST_buffer(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),(10000*1000)),3115),st_setsrid(p.geom,3115)) as t
+from paradas_mototrip p) as sub, paradas_mototrip as p 
+where t = 't' group by p.gid, p.nombre
+
+select st_transform(ST_buffer(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),(1.377)),3115)
+
+select gid,nombre,st_distance(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),p.geom) as distancia
+from paradas_mototrip p
+where st_intersects(p.geom,ST_buffer(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),1377000))
+
+
+Consultas Final 
+
+select gid,nombre,st_distance(st_transform(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),3115),st_transform((p.geom),3115))/1000 as distancia
+from paradas_mototrip p
+where st_intersects(st_transform(p.geom,3115),ST_buffer(st_transform(ST_GeometryFromText('POINT(-76.5119908 3.399239)',4326),3115),4.3*1000))
+order by distancia  
