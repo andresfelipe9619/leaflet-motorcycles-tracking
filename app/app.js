@@ -7,10 +7,13 @@ const PORT = 3001;
 const {
   doQuery,
   getParadas,
-  getConductores,
+  getVias,
   getClientes,
+  loginUsuario,
+  getRutaParada,
+  getConductores,
   getParadasBuffer,
-  loginUsuario
+  getRutaDestino
 } = require("./db/queries");
 
 app.use((req, res, next) => {
@@ -51,6 +54,13 @@ router.get("/paradas", (req, res) => {
   });
 });
 
+router.get("/vias", (req, res) => {
+  doQuery(getVias, result => {
+    res.json(result);
+    res.end();
+  });
+});
+
 router.get("/conductores", (req, res) => {
   doQuery(getConductores, result => {
     res.json(result);
@@ -66,14 +76,18 @@ router.get("/clientes", (req, res) => {
 });
 
 router.get("/ruta_parada", (req, res) => {
-  doQuery(getRutaParada, result => {
+  let { parada, latitude, longitude } = req.query;
+  let point = { lat: latitude, lon: longitude };
+  let query = getRutaParada(point, parada)
+  console.log('query', query)
+  doQuery(query, result => {
     res.json(result);
     res.end();
   });
 });
 
 router.get("/ruta_destino", (req, res) => {
-  doQuery(getClientes, result => {
+  doQuery(getRutaDestino, result => {
     res.json(result);
     res.end();
   });

@@ -26,19 +26,37 @@ let categories = {
   priorities: {}
 };
 let overlaysObj = {};
-let layersBasedOnZoom = {};
 let baseLayer = null;
 let autoCompleteData = [];
 let userLocation = null;
 let bufferRange = null;
+let paradas = null;
+let markerDestino = null;
+let rutaParada = null;
 // ************************ END APP STATE ******************
 
 // ************************ MAIN ******************
 $(document).ready(() => {
   loadMap();
   $("#range").on("change", handleOnRangeChange);
-  $("#botonubicacion").on("click", handleOnMyLocation);
+  $("#boton-ubicacion").on("click", handleOnMyLocation);
+  $("#boton-destino").on("click", handleOnFindDestino);
   $("#paradas_cercanas").on("click", handleOnFindParadas);
+  markerDestino = L.marker([3.430117, -76.516013], {
+    draggable: true
+  });
+
+  markerDestino.on('dragend', (event) => {
+    //alert('drag ended');
+    var marker = event.target;
+    var location = marker.getLatLng();
+    var lat = location.lat;
+    var lon = location.lng;
+    updateTextInput("text-destino", [lat, lon]);
+
+  });
+  markerDestino.addTo(mMap);
+
 });
 // ************************ END MAIN ******************
 
@@ -58,7 +76,7 @@ const loadMototripFeatures = async () => {
     // "clientes",
     // "conductores",
     // "barrios",
-    "paradas"
+    "vias"
     // "rutas_mio",
     // "rutas_petroncales",
     // "rutas_troncales"
@@ -115,7 +133,34 @@ const getParadasFromRange = (location, range) => {
   fetch(url)
     .then(res => res.json())
     .then(geojson => {
-      geojson.features.forEach(f => new L.GeoJSON(f).addTo(mMap));
+      console.log('geojson', geojson)
+      var geojsonMarkerOptions = {
+        radius: 8,
+        fillColor: "#ff7800",
+        color: "#000",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.8
+      };
+
+      if (mMap.hasLayer(paradas)) {
+        mMap.removeLayer(paradas)
+      } else {
+        paradas = L.geoJSON(geojson, {
+          pointToLayer: function (feature, latlng) {
+            return L.circleMarker(latlng, geojsonMarkerOptions);
+          }
+        })
+        paradas.addTo(mMap);
+      }
+      $("#paradas-text").html("");
+      geojson.features.forEach(f => {
+        let { nombre, distancia, id } = f.properties;
+        var radioBtn = $(`<input type="radio" name="parada-radio" id="${nombre}-radio" value="${id}"/>
+        <label for="${nombre}-radio"> <strong>${nombre}</strong> - ${parseFloat(distancia).toFixed(2)} kms</label>`);
+        radioBtn.appendTo('#paradas-text');
+      });
+      $("input[name='parada-radio']").on("change", handleOnChangeRadio);
     });
 };
 
@@ -127,12 +172,49 @@ const updateTextInput = (element, value) => {
 // ************************ END COMMAND FUNCTIONS ******************
 
 // ************************ EVENT HANDLERS ******************
+const getRutaParada = (point, parada) => {
+  if (!point || !parada) return;
+  console.log('{point, parada}', {point, parada})
+  let[ latitude, longitude ] = point;
+  let url = `${URL}/ruta_parada?latitude=${latitude}&longitude=${longitude}&parada=${parada}`;
+  fetch(url)
+    .then(res => res.json())
+    .then(geojson => {
+      console.log('geojson', geojson)
+      if (mMap.hasLayer(rutaParada)) {
+        mMap.removeLayer(rutaParada)
+        rutaParada = L.geoJSON(geojson)
+        rutaParada.addTo(mMap);
+        } else {
+          rutaParada = L.geoJSON(geojson)
+          rutaParada.addTo(mMap);
+        }
+    });
+}
+
+const handleOnChangeRadio = (e) => {
+  console.log('e', e.target.value)
+  console.log('e', userLocation)
+  
+  const parada = e.target.value;
+  if (parada && userLocation) {
+    getRutaParada(userLocation, parada)
+  }
+}
+
+const handleOnFindDestino = (e) => {
+  markerDestino.addTo(mMap);
+}
+
 const handleOnMyLocation = () => {
   navigator.geolocation.getCurrentPosition(location => {
     userLocation = [location.coords.latitude, location.coords.longitude];
     let latlng = new L.LatLng(...userLocation);
     let marker = L.marker(latlng).addTo(mMap);
-    updateTextInput("myLocation", userLocation);
+    let text = `Tu ubicación actúal es:\n ${userLocation}`
+    updateTextInput("myLocation", text);
+    $(".not-visible").removeClass("not-visible")
+    $("#boton-ubicacion").addClass("not-visible");
   });
 };
 

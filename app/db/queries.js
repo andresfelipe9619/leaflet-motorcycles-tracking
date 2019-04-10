@@ -7,14 +7,14 @@ const host = "localhost:5432";
 const conString =
   "postgres://" + username + ":" + password + "@" + host + "/" + database;
 
-const selectQuery = (entity, subquery) =>
+const selectQuery = (entity, subquery, id) =>
   ` SELECT json_build_object(
     'type', 'FeatureCollection',
     
     'features', json_agg(
         json_build_object(
             'type',       'Feature',
-            'id',         id,
+            'id',         ${id || "id"},
             'geometry',   ST_AsGeoJSON(ST_ForceRHR(st_transform(geom,4326)))::json,
             'properties', jsonb_set(row_to_json(${subquery ? "resultado" : entity})::jsonb,'{geom}','0',false)
         )
@@ -26,20 +26,42 @@ const selectQuery = (entity, subquery) =>
 const getParadas = selectQuery("paradas_mototrip_wgs");
 const getConductores = selectQuery("conductores_mototrip_wgs84");
 const getClientes = selectQuery("clientes_mototrip_wgs84");
+const getVias = selectQuery("vias3115", null, "gid");
 
-const getRutaParada = `
+const getRutaParada = (point, parada) => {
+
+  let subquery = `
+  SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
+  SELECT gid AS id,
+  source::integer,
+  target::integer,
+  costo::double precision AS cost
+  FROM vias_wgs84',(select o.id::integer from (select vias_wgs84_vertices_pgr.id,st_distance(vias_wgs84_vertices_pgr.the_geom,
+  st_geometryFromtext('POINT( ${point.lon} ${point.lat})',4326)) from vias_wgs84_vertices_pgr order by st_distance LIMIT 1 ) as o),
+  (select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip_wgs.geom)
+  from vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${parada}' order by 2 asc limit 1 )as d), false, false) 
+  a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)
+  `
+  return selectQuery(null, subquery, "seq")
+};
+
+const getRutaDestino = (point, destino) => {
+
+  let subquery = `
 SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
 SELECT gid AS id,
          source::integer,
          target::integer,
          costo::double precision AS cost
-        FROM vias_wgs84',
-(select o.id::integer from (
-select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,clientes_mototrip_wgs84.geom)
-from  vias_wgs84_vertices_pgr,clientes_mototrip_wgs84 WHERE clientes_mototrip_wgs84.id= '1' ORDER BY 2 ASC LIMIT 1 )as o),
+        FROM vias_wgs84',(select o.id::integer from (select vias_wgs84_vertices_pgr.id,st_distance(vias_wgs84_vertices_pgr.the_geom,
+        st_geometryFromtext('POINT(${point.lat} ${
+    point.lon
+    })',4326)) from vias_wgs84_vertices_pgr order by st_distance LIMIT 1 ) as o),
 (select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip_wgs.geom)
-from  vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '5' order by 2 asc limit 1  )as d), false, false) 
-a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)`;
+from  vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${destino}' order by 2 asc limit 1  )as d), false, false) 
+a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)`
+  return selectQuery(null, subquery, "seq")
+};
 
 const getParadasBuffer = (point, bufer) => {
   if (!point && !bufer) return;
@@ -71,7 +93,6 @@ const doQuery = (mQuery, callback) => {
   });
   query.on("end", result => {
     if (result.rows) {
-      console.log("RESULT HAS ROWS", result);
       let res =
         (result.rows[0] && result.rows[0].json_build_object) || result.rows;
       callback(res);
@@ -83,10 +104,12 @@ const doQuery = (mQuery, callback) => {
 
 module.exports = {
   doQuery,
-  loginUsuario,
+  getVias,
   getParadas,
   getClientes,
-  getConductores,
+  loginUsuario,
   getRutaParada,
-  getParadasBuffer
+  getConductores,
+  getParadasBuffer,
+  getRutaDestino
 };
