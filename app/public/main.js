@@ -56,6 +56,18 @@ const loadMap = options => {
   baseLayer = L.tileLayer(TILE_LAYER);
 
   baseLayer.addTo(mMap);
+  fetch(`${URL}/currentUser`)
+    .then(result => result.json())
+    .then(user => {
+      console.log("user", user);
+      if (user.rol === "admin") {
+        showAdminArea();
+      } else {
+        showAdminArea();
+        // hideAdminArea();
+      }
+    });
+
   // loadMototripFeatures();
 };
 
@@ -113,6 +125,14 @@ const loadGroupedLayerControl = () => {
   L.control.groupedLayers(mapabase, groupedOverlays).addTo(mMap);
 };
 
+const showAdminArea = () => {
+  $("#admin-area").removeClass("not-visible");
+};
+
+const hideAdminArea = () => {
+  $("#admin-area").addClass("not-visible");
+};
+
 const getParadasFromRange = (location, range) => {
   if (!location || !range) return;
   console.log("PARADAS RANGE", { location, range });
@@ -121,7 +141,7 @@ const getParadasFromRange = (location, range) => {
   fetch(url)
     .then(res => res.json())
     .then(geojson => {
-      console.log('geojson', geojson)
+      console.log("geojson", geojson);
       var geojsonMarkerOptions = {
         radius: 8,
         fillColor: "#ff7800",
@@ -132,21 +152,25 @@ const getParadasFromRange = (location, range) => {
       };
 
       if (mMap.hasLayer(paradas)) {
-        mMap.removeLayer(paradas)
+        mMap.removeLayer(paradas);
       } else {
         paradas = L.geoJSON(geojson, {
-          pointToLayer:  (feature, latlng) => {
+          pointToLayer: (feature, latlng) => {
             return L.circleMarker(latlng, geojsonMarkerOptions);
           }
-        })
+        });
         paradas.addTo(mMap);
       }
       $("#paradas-text").html("");
+      $("#boton-destino").removeClass("not-visible");
+
       geojson.features.forEach(f => {
         let { nombre, distancia, gid } = f.properties;
         var radioBtn = $(`<input type="radio" name="parada-radio" gid="${nombre}-radio" value="${gid}"/>
-        <label for="${nombre}-radio"> <strong>${nombre}</strong> - ${parseFloat(distancia).toFixed(2)} kms</label>`);
-        radioBtn.appendTo('#paradas-text');
+        <label for="${nombre}-radio"> <strong>${nombre}</strong> - ${parseFloat(
+          distancia
+        ).toFixed(2)} kms</label>`);
+        radioBtn.appendTo("#paradas-text");
       });
       $("input[name='parada-radio']").on("change", handleOnChangeRadio);
     });
@@ -162,99 +186,117 @@ const updateTextInput = (element, value) => {
 // ************************ EVENT HANDLERS ******************
 const getRutaParada = (point, parada) => {
   if (!point || !parada) return;
-  console.log('{point, parada}', { point, parada })
+  console.log("{point, parada}", { point, parada });
   let [latitude, longitude] = point;
   let url = `${URL}/ruta_parada?latitude=${latitude}&longitude=${longitude}&parada=${parada}`;
   fetch(url)
     .then(res => res.json())
     .then(geojson => {
-      console.log('geojson', geojson)
+      console.log("geojson", geojson);
       if (mMap.hasLayer(rutaParada)) {
-        mMap.removeLayer(rutaParada)
-        rutaParada = L.geoJSON(geojson)
+        mMap.removeLayer(rutaParada);
+        rutaParada = L.geoJSON(geojson);
         rutaParada.addTo(mMap);
       } else {
-        rutaParada = L.geoJSON(geojson)
+        rutaParada = L.geoJSON(geojson);
         rutaParada.addTo(mMap);
       }
     });
-}
+};
 
 const getRutaDestino = (destino, parada) => {
   if (!destino || !parada) return;
-  console.log('{destino, parada}', { destino, parada })
+  console.log("{destino, parada}", { destino, parada });
   let [latitude, longitude] = destino;
   let url = `${URL}/ruta_destino?latitude=${latitude}&longitude=${longitude}&parada=${parada}`;
   fetch(url)
     .then(res => res.json())
     .then(geojson => {
-      console.log('geojson', geojson)
+      console.log("geojson", geojson);
+      updateTextInput(
+        "text-precio",
+        `Precio: ${parseFloat(geojson.precio).toFixed(2)}`
+      );
+
       if (mMap.hasLayer(rutaDestino)) {
-        mMap.removeLayer(rutaDestino)
-        rutaDestino = L.geoJSON(geojson)
+        mMap.removeLayer(rutaDestino);
+        rutaDestino = L.geoJSON(geojson.ruta);
         rutaDestino.addTo(mMap);
       } else {
-        rutaDestino = L.geoJSON(geojson)
+        rutaDestino = L.geoJSON(geojson.ruta);
         rutaDestino.addTo(mMap);
       }
     });
-}
+};
 
-const handleOnChangeRadio = (e) => {
+const handleOnChangeRadio = e => {
   mParadaId = e.target.value;
-  console.log('mParadaId', mParadaId)
+  console.log("mParadaId", mParadaId);
   if (mParadaId && userLocation) {
-    getRutaParada(userLocation, mParadaId)
+    getRutaParada(userLocation, mParadaId);
   }
-}
+};
 
-const handleOnFindDestino = (e) => {
-  const styles = markerHtmlStyles('#583470')
+const handleOnFindDestino = e => {
+  $("#boton-destino").addClass("not-visible");
+  $("#boton-guarda-viaje").removeClass("not-visible");
+
+  const styles = markerHtmlStyles("#583470");
   const icon = L.divIcon({
     className: "my-custom-pin",
     iconAnchor: [0, 24],
     labelAnchor: [-6, 0],
     popupAnchor: [0, -36],
     html: `<span style="${styles}" />`
-  })
+  });
   markerDestino = L.marker([3.430117, -76.516013], {
     icon,
     draggable: true
   });
 
-  markerDestino.on('dragend', (event) => {
+  markerDestino.on("dragend", event => {
     let marker = event.target;
     let location = marker.getLatLng();
     let lat = location.lat;
     let lon = location.lng;
-    let coords = [lat, lon]
+    let coords = [lat, lon];
     destinoLocation = coords;
-    updateTextInput("text-destino", coords);
-    if (mParadaId) { 
-      getRutaDestino(coords, mParadaId)
+    let prettylocation = [
+      parseFloat(lat).toFixed(4),
+      parseFloat(lon).toFixed(2)
+    ];
+    updateTextInput("text-destino", `Ubicacion: ${prettylocation}`);
+
+    if (mParadaId) {
+      getRutaDestino(coords, mParadaId);
     }
   });
   markerDestino.addTo(mMap);
-}
+};
 
 const handleOnMyLocation = () => {
   navigator.geolocation.getCurrentPosition(location => {
     userLocation = [location.coords.latitude, location.coords.longitude];
     let latlng = new L.LatLng(...userLocation);
-    const styles = markerHtmlStyles('#fa111b')
+    const styles = markerHtmlStyles("#fa111b");
     const icon = L.divIcon({
       className: "my-custom-pin",
       iconAnchor: [0, 24],
       labelAnchor: [-6, 0],
       popupAnchor: [0, -36],
       html: `<span style="${styles}" />`
-    })
-    
-    let marker = L.marker(latlng, {icon}).addTo(mMap);
-    let text = `Tu ubicación actúal es:\n ${userLocation}`
+    });
+    let prettylocation = [
+      parseFloat(location.coords.latitude).toFixed(4),
+      parseFloat(location.coords.longitude).toFixed(4)
+    ];
+    let marker = L.marker(latlng, { icon }).addTo(mMap);
+    let text = `Tu ubicación actúal es:\n ${prettylocation}`;
     updateTextInput("myLocation", text);
-    $(".not-visible").removeClass("not-visible")
+    $(".not-visible").removeClass("not-visible");
     $("#boton-ubicacion").addClass("not-visible");
+    $("#boton-destino").addClass("not-visible");
+    $("#boton-guarda-viaje").addClass("not-visible");
   });
 };
 
@@ -344,7 +386,7 @@ const getPopupHtmlContent = ({ properties: { altura, enlace, nombre } }) =>
       </a>
     </div>`;
 
-const markerHtmlStyles = (color) => `
+const markerHtmlStyles = color => `
   background-color: ${color};
   width: 2rem;
   height: 2rem;
@@ -354,4 +396,4 @@ const markerHtmlStyles = (color) => `
   position: relative;
   border-radius: 2rem 2rem 0;
   transform: rotate(45deg);
-  border: 1px solid #FFFFFF`
+  border: 1px solid #FFFFFF`;

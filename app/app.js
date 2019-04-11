@@ -6,16 +6,17 @@ const bodyParser = require("body-parser");
 const PORT = 3001;
 const {
   doQuery,
-  getParadas,
   getVias,
+  getParadas,
   getClientes,
   loginUsuario,
   getRutaParada,
   getConductores,
+  getRutaDestino,
   getParadasBuffer,
-  getRutaDestino
+  getPrecioDestino
 } = require("./db/queries");
-
+let currentUser = null;
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
@@ -29,23 +30,32 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
+  // res.sendFile(path.join(__dirname, "public/login.html"));
 });
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public/login.html"));
 });
+app.get("/currentUser", (req, res) => {
+  res.json(currentUser);
+});
 app.post("/login", (req, res) => {
   let login = req.body.login;
   let [usuario, contraseña] = login;
-  let estaRegistrado = loginUsuario(usuario, contraseña);
-  if (estaRegistrado) {
-    return res.sendFile(path.join(__dirname, "public/index.html"));
-  }
-  return res.sendFile(path.join(__dirname, "public/login.html"));
+  let query = loginUsuario(usuario, contraseña);
+  doQuery(query, result => {
+    console.log("result", result);
+    if (result.length > 0) {
+      currentUser = result[0];
+      return res.sendFile(path.join(__dirname, "public/index.html"));
+    } else {
+      return res.sendFile(path.join(__dirname, "public/login_error.html"));
+    }
+  });
 });
+app.use(express.static(path.join(__dirname, "public")));
 
 router.get("/paradas", (req, res) => {
   doQuery(getParadas, result => {
@@ -78,8 +88,7 @@ router.get("/clientes", (req, res) => {
 router.get("/ruta_parada", (req, res) => {
   let { parada, latitude, longitude } = req.query;
   let point = { lat: latitude, lon: longitude };
-  let query = getRutaParada(point, parada)
-  console.log('query', query)
+  let query = getRutaParada(point, parada);
   doQuery(query, result => {
     res.json(result);
     res.end();
@@ -89,11 +98,13 @@ router.get("/ruta_parada", (req, res) => {
 router.get("/ruta_destino", (req, res) => {
   let { parada, latitude, longitude } = req.query;
   let destino = { lat: latitude, lon: longitude };
-  let query = getRutaDestino(destino, parada);
-  console.log('query_destino', query)
-  doQuery(query, result => {
-    res.json(result);
-    res.end();
+  let queryruta = getRutaDestino(destino, parada);
+  let queryprecio = getPrecioDestino(destino, parada);
+  doQuery(queryruta, ruta => {
+    doQuery(queryprecio, precio => {
+      res.json({ ruta, precio: precio[0].precio });
+      res.end();
+    });
   });
 });
 
@@ -101,7 +112,6 @@ router.get("/paradas_buffer", (req, res) => {
   let { buffer, latitude, longitude } = req.query;
   let point = { lat: latitude, lon: longitude };
   let query = getParadasBuffer(point, buffer);
-  console.log("query", query);
   doQuery(query, result => {
     res.json(result);
     res.end();
