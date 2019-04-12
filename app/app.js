@@ -63,15 +63,9 @@ app.use(express.static(path.join(__dirname, "public")));
 
 router.post("/viaje", (req, res) => {
   let body = req.body;
-  const {
-    precio,
-    observacion,
-    calificacion,
-    cliente,
-    parada,
-    conductor
-  } = body;
   console.log("body", body);
+  const { precio, observacion, calificacion, cliente, parada } = body;
+  let conductor = Math.floor(Math.random() * 5) + 1;
   let query = createViaje(
     conductor,
     calificacion,

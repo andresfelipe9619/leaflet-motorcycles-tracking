@@ -53,7 +53,7 @@ $(document).ready(() => {
   $("#paradas_cercanas").on("click", handleOnFindParadas);
   $("#boton-guarda-viaje").on("click", handleOnSaveViaje);
   $("#calificacion-input").on("change", handleOnChangeCalificacion);
-  $("#boton-admin-viajes").on("click", handleOnChangeCalificacion);
+  $("#boton-admin-viajes").on("click", handleOnGetViajes);
 });
 // ************************ END MAIN ******************
 
@@ -70,11 +70,10 @@ const loadMap = options => {
     .then(user => {
       currentUser = user;
       console.log("user", user);
-      if (user.rol === "admin") {
+      if (user.rol === "administrador") {
         showAdminArea();
       } else {
-        showAdminArea();
-        // hideAdminArea();
+        hideAdminArea();
       }
     });
 
@@ -151,26 +150,23 @@ const handleOnSaveViaje = () => {
   let cliente = currentUser.id;
   let parada = mParadaId;
   // let ruta = destinoJson.ruta;
-
-  destinoLocation;
   let options = {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: {
+    body: JSON.stringify({
       precio,
       calificacion,
       observacion,
       cliente,
-      parada,
-      ruta
-    }
+      parada
+    })
   };
   console.log("options", options);
   let url = `${URL}/viaje`;
   fetch(url, options)
-    .then(res => res.json())
+    .then(res => console.log("res", res))
     .then(data => console.log("data", data));
 };
 
@@ -182,18 +178,25 @@ const getViajes = () => {
       $("#viajes-text").html("");
       // $("#boton-destino").removeClass("not-visible");
 
-      geojson.features.forEach(f => {
+      geojson.forEach(f => {
         let {
           id,
           conductor,
           calificacion,
           observacion,
-          cliente,
+          usuario,
           parada,
           precio
-        } = f.properties;
-        var radioBtn = $(`<input type="radio" name="viaje-radio" gid="${id}-radio" value="${gid}"/>
-        <label for="${id}-radio"> <strong>parada:${parada}</strong> - observacion: ${observacion}</label>`);
+        } = f;
+        var radioBtn = $(`
+        <label for="${id}-radio"> <strong>parada:${parada}</strong>
+        <p>precio: ${precio}</p>
+        <p>observacion: ${observacion}</p>
+        <p>cliente: ${usuario}</p>
+        <p>calificacion: ${calificacion}</p>
+        <p>conductor: ${conductor}</p>
+        
+        </label>`);
         radioBtn.appendTo("#viajes-text");
       });
       // $("input[name='parada-radio']").on("change", handleOnChangeRadio);
@@ -405,65 +408,6 @@ const handleOnEachFeature = (feature, layer) => {
 };
 
 // ************************ END EVENT HANDLERS ******************
-
-const pointToLayer = (feature, latlng) => {
-  let text = getPopupHtmlContent(feature);
-  let mIcon, marker, popup;
-  let { visible, enlace } = feature.properties;
-  let iconOptions = {
-    iconSize: [22, 22],
-    iconAnchor: [4, 4],
-    html: ""
-  };
-  let popupOptions = {
-    closeButton: false,
-    className: "custom",
-    autoClose: true
-  };
-
-  mIcon = L.divIcon(iconOptions);
-  marker = L.marker(latlng, {
-    icon: mIcon
-  });
-
-  if (!isMobileDevice()) {
-    marker.on("mouseover", () => {
-      for (let data of autoCompleteData) {
-        data.marker.closePopup();
-      }
-      marker.openPopup();
-    });
-    marker.on("click", () => {
-      window.open(enlace, "_self");
-    });
-  }
-  popup = visible
-    ? marker.bindPopup(text, { ...popupOptions, autoClose: false })
-    : marker.bindPopup(text, popupOptions);
-  autoCompleteData.push({
-    id: feature.id,
-    text: feature.properties.nombre_busqueda,
-    marker: marker
-  });
-
-  return popup;
-};
-
-const isMobileDevice = () =>
-  typeof window.orientation !== "undefined" ||
-  navigator.userAgent.indexOf("IEMobile") !== -1;
-
-const getPopupHtmlContent = ({ properties: { altura, enlace, nombre } }) =>
-  `
-    <div class="wave-score">
-      <span>${altura} </span>
-    </div>
-    <div class="wave-link" >
-      <a 
-      href="${enlace}" >
-        ${nombre} 
-      </a>
-    </div>`;
 
 const markerHtmlStyles = color => `
   background-color: ${color};

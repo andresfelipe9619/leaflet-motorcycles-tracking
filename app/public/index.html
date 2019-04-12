@@ -37,13 +37,8 @@
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#inicio-header">INICIO
-                        <span class="sr-only">(current)</span>
-                    </a>
-                </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#gismodel-header">GISMODEL
+                    <a class="nav-link" href="#mototrip-header">MOTOTRIP
                     </a>
                 </li>
                 <li class="nav-item">
@@ -67,7 +62,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div id="admin-area" class="card not-visible" style="width: 14rem; margin-top: 40px">
+                <div id="admin-area" class="card not-visible" style="width: 20rem; margin-top: 40px">
                     <p id="admin-text">Admin</p>
                     <ul id="viajes-text"></ul>
 
@@ -75,7 +70,7 @@
                         Ver Viajes
                     </button>
                 </div>
-                <div class="card" style="width: 14rem">
+                <div class="card" style="width: 20rem">
                     <div class="card-header">
                         Acciones
                     </div>
@@ -85,6 +80,17 @@
                             <button id="boton-ubicacion" type="button" class="btn btn-primary">
                                 Tomar ubicacion
                             </button>
+                        </li>
+
+                        <li class="list-group-item not-visible">
+                            <label for="range">Rango de paradas</label>
+                            <input id="range" type="range" min="0" max="10" step="1" />
+                            <p id="textInput"></p>
+
+                            <button id="paradas_cercanas" type="button" class="btn btn-primary">
+                                Buscar paradas cercanas
+                            </button>
+                            <ul id="paradas-text"></ul>
                         </li>
                         <li class="list-group-item not-visible">
                             <p id="text-destino"></p>
@@ -102,88 +108,80 @@
                                 Guardar viaje
                             </button>
                         </li>
-                        <li class="list-group-item not-visible">
-                            <label for="range">Rango de paradas</label>
-                            <input id="range" type="range" min="0" max="10" step="1" />
-                            <p id="textInput"></p>
-
-                            <button id="paradas_cercanas" type="button" class="btn btn-primary">
-                                Buscar paradas cercanas
-                            </button>
-                            <ul id="paradas-text"></ul>
-                        </li>
-
                     </ul>
                 </div>
                 <ul>
                 </ul>
             </div>
         </div>
-        <div class="row">
+        <div class="row" id="mototrip-header">
             <div class="col-md-10" style="margin: auto; margin-top: 15px">
                 <div class="jumbotron">
 
-                    <h1 class="text-center" id="gismodel-header">GISMODEL</h1>
+                    <h1 class="text-center">MOTOTRIP</h1>
                     <p>La integración de la tecnología,la información espacial y la ciencia e investigación facultan la
                         posibilidad de generar
                         conocimiento que permite apoyar la toma de decisiones en cualquier àmbito. Todo lo que existe en
-                        alguna parte de la
+                        alguna
+                        parte de la
                         superficie de la tierra y en un momento de su historia, es susceptible de ser representado en
-                        una base de datos espacial
+                        una base
+                        de datos espacial
                         y ser integrado a un Sistema de Información Geográfica (SIG). Esto constituye una herramienta
-                        poderosa para entender
+                        poderosa
+                        para entender
                         las relaciones espaciales entre los elementos, sus dependencias, efectos e impactos con el
-                        entorno, los recursos, los
+                        entorno, los
+                        recursos, los
                         medios naturales, y la interacción de ellos con el hombre o la sociedad.</p>
                 </div>
             </div>
         </div>
-
-        <div class="row">
+        <div class="row" id="somos-header">
             <div class="col-md-10" style="margin: auto; margin-top: 15px">
                 <div class="jumbotron">
 
-                    <h1 class="text-center" id="somos-header">QUIENES SOMOS</h1>
-                    <h2>Sistema de gestion de Quejas y Reclamos de Huecos en las vias de la Ciudad de Cali</h2>
-                    <p>Somos un grupo que desarrolló un proyecto con el objetivo de generar un aplicativo en donde el
-                        ciudadano pueda incluir
-                        en línea la localización y características del de la falla reconocida, y subir la información
-                        relevante que permita
-                        inventariar y hacer el seguimiento de dichas fallas reportadas. Disponer de una herramienta de
-                        consulta para los ciudadanos
-                        que deseen conocer el estado actual de un determinado tema de fallas en los servicios de la
-                        alcaldía o de EMCALI, a
-                        través de una consulta que acceda a la base de datos de la ciudad, y que permita generar el
-                        reporte de la consulta
-                        con al menos 5 criterios de búsqueda anidados Universidad del Valle UNIVERSIDAD DEL VALLE
-                        Dirección: PBX: Cali - Colombia
-                        Ciudad Universitaria Meléndez +57 2 3212100 O 1994 - 2018 Calle 13 # 100-00 A.A.25360 Sede San
-                        Fernando Calle 4B N°
-                        36-00 Redes Sociales:
-                    </p>
+                    <h1 class="text-center">QUIENES SOMOS</h1>
+                    <h2>Aplicacion De Transporte en Motocicleta.</h2>
+                    <p>Somos un equipo que desarrolló un proyecto con el objetivo de generar un sistema de informacion
+                        geografico en donde cualquier ciudadano pueda solicitar de manera agil,segura y confiable el
+                        servicio de
+                        MotoTrip.
+
+
+                        <p>
+                            UNIVERSIDAD DEL VALLE
+                            Dirección: PBX: Cali - Colombia
+                            Ciudad Universitaria Meléndez +57 2 3212100 O 1994 - 2018
+                            Calle 13 # 100-00 A.A.25360
+                            Sede San Fernando Calle 4B N°36-00.
+                        </p>
                 </div>
             </div>
         </div>
 
-        <div class="row  ">
+        <div class="row" id="contacto-header">
             <div class="col-md-10" style="margin: auto; margin-top: 15px">
-                <h1 class="text-center" id="contacto-header">CONTACTO</h1>
+                <!-- <div class="jumbotron"> -->
+                <h1 class="text-center">CONTACTO</h1>
                 <br>
                 <div class="row justify-content-md-center">
                     <div class="col-md-3 ">
                         <h3>Estudiantes</h3>
-                        <p>Luis Alfonso Cardona Vargas</p>
-                        <p>Mayra Alejandra Sanchez Mejia</p>
+                        <p>Luis Alfonso Cardona</p>
+                        <p>Adriana Salinas</p>
+                        <p>Jorge Castaño</p>
                     </div>
                     <div class="col-md-3">
                         <h3>Telefonos</h3>
                         <p>(+57) 318 283 2642</p>
-                        <p>(+57) 313 770 8559</p>
+                        <p>(+57) 313 553 3530</p>
                     </div>
                     <div class="col-md-3">
                         <h3>Correos</h3>
                         <p>luis.alfonso.cardona@correounivalle.edu.co</p>
-                        <p>mayra.sanchez@correounivalle.edu.co</p>
+                        <p>salinas.adriana@correounivalle.edu.co</p>
+                        <p>jorge.castano@correounivalle.edu.co</p>
                     </div>
                 </div>
 
@@ -214,77 +212,7 @@
                         </form>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    </div>
-
-    <br>
-    <div class="modal fade" id="formulariomodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">
-                        <p id="titulomodal"></p>
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-
-                    <form>
-
-                        <div class="form-group">
-                            <label for="input_lat">Latitud:</label>
-                            <input type="text" class="form-control" id="input_lat" aria-describedby="emailHelp"
-                                placeholder="">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="input_long">Longitud:</label>
-                            <input type="text" class="form-control" id="input_lon" placeholder="">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="input_nom">Nombre:</label>
-                            <input type="text" class="form-control" id="input_nom" placeholder="">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="input_fecha">Fecha:</label>
-                            <input type="date" class="form-control" id="input_fecha" placeholder="">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="input_tipo">Tipo</label>
-                            <select class="form-control" id="input_tipo">
-                                <option value="H">Hueco</option>
-                                <option value="R">Robo</option>
-                                <option value="D">Daños</option>
-                                <option value="S">Semaforo</option>
-
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="input_desc">Descripcion:</label>
-                            <input type="text" class="form-control" id="input_desc" placeholder="">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="input_foto">Foto</label>
-                            <input type="file" class="form-control-file" id="input_foto" accept="image/*">
-                        </div>
-
-                    </form>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="enviarform">Enviar Formulario</button>
-                </div>
+                <!-- </div> -->
             </div>
 
         </div>

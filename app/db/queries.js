@@ -7,7 +7,7 @@ const host = "localhost:5432";
 const conString =
   "postgres://" + username + ":" + password + "@" + host + "/" + database;
 
-const selectQuery = (entity, subquery, id) =>
+const selectQuery = (entity, subquery, id, geom) =>
   ` SELECT json_build_object(
     'type', 'FeatureCollection',
     
@@ -18,7 +18,7 @@ const selectQuery = (entity, subquery, id) =>
             'geometry',   ST_AsGeoJSON(ST_ForceRHR(st_transform(geom,4326)))::json,
             'properties', jsonb_set(row_to_json(${
               subquery ? "resultado" : entity
-            })::jsonb,'{geom}','0',false)
+            })::jsonb,'{${geom ? geom : "geom"}}','0',false)
         )
     )
     )
@@ -28,7 +28,12 @@ const selectQuery = (entity, subquery, id) =>
 const getParadas = selectQuery("paradas_mototrip_wgs");
 const getConductores = selectQuery("conductores_mototrip_wgs84");
 const getClientes = selectQuery("usuario_mototrip");
-const getViajes = selectQuery("viajes", null, "gid");
+const getViajes = `
+SELECT conductores_mototrip_wgs84.conductor, calificacion, observacion, usuario_mototrip.nombre as usuario, paradas_mototrip_wgs.nombre as parada, precio 
+FROM viajes INNER JOIN conductores_mototrip_wgs84 ON conductores_mototrip_wgs84.gid=viajes.conductor_idconductor
+INNER JOIN usuario_mototrip ON usuario_mototrip.id=viajes.cliente_idcliente 
+INNER JOIN paradas_mototrip_wgs ON paradas_mototrip_wgs.gid=viajes.parada_moto_idparada_moto;
+`;
 
 const getRutaParada = (point, parada) => {
   let subquery = `
@@ -82,7 +87,7 @@ order by distancia`;
 
 const getPrecioDestino = (destino, parada) => {
   if (!destino || !parada) return;
-  let query = `SELECT st_length(st_transform(st_union(o.geom),3115))* 300000 as precio from (SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
+  let query = `SELECT (st_length(st_transform(st_union(o.geom),3115))/1000)* 2000 as precio from (SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
   SELECT gid AS id,
   source::integer,
   target::integer,
