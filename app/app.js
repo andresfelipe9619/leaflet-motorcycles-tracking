@@ -6,8 +6,9 @@ const bodyParser = require("body-parser");
 const PORT = 3001;
 const {
   doQuery,
-  getVias,
+  getViajes,
   getParadas,
+  createViaje,
   getClientes,
   loginUsuario,
   getRutaParada,
@@ -31,6 +32,8 @@ app.use((req, res, next) => {
 });
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
   // res.sendFile(path.join(__dirname, "public/login.html"));
@@ -51,12 +54,37 @@ app.post("/login", (req, res) => {
       currentUser = result[0];
       return res.sendFile(path.join(__dirname, "public/index.html"));
     } else {
+      // currentUser = null;
       return res.sendFile(path.join(__dirname, "public/login_error.html"));
     }
   });
 });
 app.use(express.static(path.join(__dirname, "public")));
 
+router.post("/viaje", (req, res) => {
+  let body = req.body;
+  const {
+    precio,
+    observacion,
+    calificacion,
+    cliente,
+    parada,
+    conductor
+  } = body;
+  console.log("body", body);
+  let query = createViaje(
+    conductor,
+    calificacion,
+    observacion,
+    cliente,
+    parada,
+    precio
+  );
+  doQuery(query, result => {
+    res.json(result);
+    res.end();
+  });
+});
 router.get("/paradas", (req, res) => {
   doQuery(getParadas, result => {
     res.json(result);
@@ -64,8 +92,8 @@ router.get("/paradas", (req, res) => {
   });
 });
 
-router.get("/vias", (req, res) => {
-  doQuery(getVias, result => {
+router.get("/viajes", (req, res) => {
+  doQuery(getViajes, result => {
     res.json(result);
     res.end();
   });

@@ -28,22 +28,22 @@ const selectQuery = (entity, subquery, id) =>
 const getParadas = selectQuery("paradas_mototrip_wgs");
 const getConductores = selectQuery("conductores_mototrip_wgs84");
 const getClientes = selectQuery("usuario_mototrip");
-const getVias = selectQuery("vias3115", null, "gid");
+const getViajes = selectQuery("viajes", null, "gid");
 
 const getRutaParada = (point, parada) => {
   let subquery = `
-  SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
-  SELECT gid AS id,
-  source::integer,
-  target::integer,
-  costo::double precision AS cost
-  FROM vias_wgs84',(select o.id::integer from (select vias_wgs84_vertices_pgr.id,st_distance(vias_wgs84_vertices_pgr.the_geom,
-  st_geometryFromtext('POINT( ${point.lon} ${
+SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
+SELECT gid AS id,
+source::integer,
+target::integer,
+costo::double precision AS cost
+FROM vias_3115_profe84',(select o.id::integer from (select vias_3115_profe_vertices84_pgr.id,st_distance(vias_3115_profe_vertices84_pgr.geom,
+st_transform(st_geometryFromtext('POINT( ${point.lon} ${
     point.lat
-  })',4326)) from vias_wgs84_vertices_pgr order by st_distance LIMIT 1 ) as o),
-  (select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip_wgs.geom)
-  from vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${parada}' order by 2 asc limit 1 )as d), false, false) 
-  a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)
+  })',4326),4326)) from vias_3115_profe_vertices84_pgr order by st_distance LIMIT 1 ) as o),
+(select d.id ::integer from (select vias_3115_profe_vertices84_pgr.id, st_distance(vias_3115_profe_vertices84_pgr.geom,paradas_mototrip_wgs.geom)
+from vias_3115_profe_vertices84_pgr, paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${parada}' order by 2 asc limit 1 )as d), false, false) 
+a LEFT JOIN vias_3115_profe84 b ON (a.id2 = b.gid)
   `;
   return selectQuery(null, subquery, "seq");
 };
@@ -82,7 +82,7 @@ order by distancia`;
 
 const getPrecioDestino = (destino, parada) => {
   if (!destino || !parada) return;
-  let query = `SELECT st_length(st_union(o.geom))* 300000 as precio from (SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
+  let query = `SELECT st_length(st_transform(st_union(o.geom),3115))* 300000 as precio from (SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
   SELECT gid AS id,
   source::integer,
   target::integer,
@@ -106,21 +106,18 @@ const loginUsuario = (usuario, contraseña) => {
   return false;
 };
 
-const createViaje = ({
-  ruta,
-  tiempo,
+const createViaje = (
   conductor,
   calificacion,
-  observaciones,
+  observacion,
   cliente,
   parada,
   precio
-}) => {
-  `
-INSERT INTO streets(street_name, the_geom)
-SELECT 'some street', 
-ST_GeomFromText('LINESTRING(-70.729212 42.373848,-70.67569 42.375098)',4269)
-`;
+) => {
+  let query = `INSERT INTO viajes(conductor_idconductor, calificacion, observacion, cliente_idcliente, parada_moto_idparada_moto, precio)
+VALUES (${conductor}, ${calificacion}, '${observacion}', ${cliente}, ${parada}, ${precio})`;
+  console.log("query", query);
+  return query;
 };
 
 const doQuery = (mQuery, callback) => {
@@ -145,8 +142,9 @@ const doQuery = (mQuery, callback) => {
 
 module.exports = {
   doQuery,
-  getVias,
+  getViajes,
   getParadas,
+  createViaje,
   getClientes,
   loginUsuario,
   getRutaParada,

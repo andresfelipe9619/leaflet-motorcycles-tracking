@@ -32,10 +32,16 @@ let destinoLocation = null;
 let userLocation = null;
 let bufferRange = null;
 let paradas = null;
+let viajes = null;
 let markerDestino = null;
 let rutaParada = null;
 let rutaDestino = null;
+let destinoJson = null;
 let mParadaId = null;
+let mCalificacion = null;
+let mObservaciones = null;
+let currentUser = null;
+let currentViaje = null;
 // ************************ END APP STATE ******************
 
 // ************************ MAIN ******************
@@ -45,6 +51,9 @@ $(document).ready(() => {
   $("#boton-ubicacion").on("click", handleOnMyLocation);
   $("#boton-destino").on("click", handleOnFindDestino);
   $("#paradas_cercanas").on("click", handleOnFindParadas);
+  $("#boton-guarda-viaje").on("click", handleOnSaveViaje);
+  $("#calificacion-input").on("change", handleOnChangeCalificacion);
+  $("#boton-admin-viajes").on("click", handleOnChangeCalificacion);
 });
 // ************************ END MAIN ******************
 
@@ -59,6 +68,7 @@ const loadMap = options => {
   fetch(`${URL}/currentUser`)
     .then(result => result.json())
     .then(user => {
+      currentUser = user;
       console.log("user", user);
       if (user.rol === "admin") {
         showAdminArea();
@@ -131,6 +141,63 @@ const showAdminArea = () => {
 
 const hideAdminArea = () => {
   $("#admin-area").addClass("not-visible");
+};
+
+const handleOnSaveViaje = () => {
+  if (!destinoJson) return;
+  let precio = destinoJson.precio;
+  let calificacion = $("#calificacion-input").val();
+  let observacion = $("#observaciones-input").val();
+  let cliente = currentUser.id;
+  let parada = mParadaId;
+  // let ruta = destinoJson.ruta;
+
+  destinoLocation;
+  let options = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: {
+      precio,
+      calificacion,
+      observacion,
+      cliente,
+      parada,
+      ruta
+    }
+  };
+  console.log("options", options);
+  let url = `${URL}/viaje`;
+  fetch(url, options)
+    .then(res => res.json())
+    .then(data => console.log("data", data));
+};
+
+const getViajes = () => {
+  let url = `${URL}/viajes`;
+  fetch(url)
+    .then(res => res.json())
+    .then(geojson => {
+      $("#viajes-text").html("");
+      // $("#boton-destino").removeClass("not-visible");
+
+      geojson.features.forEach(f => {
+        let {
+          id,
+          conductor,
+          calificacion,
+          observacion,
+          cliente,
+          parada,
+          precio
+        } = f.properties;
+        var radioBtn = $(`<input type="radio" name="viaje-radio" gid="${id}-radio" value="${gid}"/>
+        <label for="${id}-radio"> <strong>parada:${parada}</strong> - observacion: ${observacion}</label>`);
+        radioBtn.appendTo("#viajes-text");
+      });
+      // $("input[name='parada-radio']").on("change", handleOnChangeRadio);
+    });
 };
 
 const getParadasFromRange = (location, range) => {
@@ -213,6 +280,7 @@ const getRutaDestino = (destino, parada) => {
     .then(res => res.json())
     .then(geojson => {
       console.log("geojson", geojson);
+      destinoJson = geojson;
       updateTextInput(
         "text-precio",
         `Precio: ${parseFloat(geojson.precio).toFixed(2)}`
@@ -237,9 +305,18 @@ const handleOnChangeRadio = e => {
   }
 };
 
+const handleOnGetViajes = () => {
+  getViajes();
+};
+
+const handleOnChangeCalificacion = e => {
+  mCalificacion = e.target.value;
+  console.log("mCalificacion", mCalificacion);
+  updateTextInput("textCalificacion", mCalificacion);
+};
+
 const handleOnFindDestino = e => {
   $("#boton-destino").addClass("not-visible");
-  $("#boton-guarda-viaje").removeClass("not-visible");
 
   const styles = markerHtmlStyles("#583470");
   const icon = L.divIcon({
@@ -255,6 +332,8 @@ const handleOnFindDestino = e => {
   });
 
   markerDestino.on("dragend", event => {
+    $("#boton-guarda-viaje").removeClass("not-visible");
+
     let marker = event.target;
     let location = marker.getLatLng();
     let lat = location.lat;
