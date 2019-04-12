@@ -56,18 +56,18 @@ a LEFT JOIN vias_3115_profe84 b ON (a.id2 = b.gid)
 const getRutaDestino = (destino, parada) => {
   if (!destino || !parada) return;
   let subquery = `
-SELECT seq, id1 AS node, id2 AS edge, cost, b.geom FROM pgr_dijkstra('
+SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
 SELECT gid AS id,
-         source::integer,
-         target::integer,
-         costo::double precision AS cost
-        FROM vias_wgs84',(select o.id::integer from (select vias_wgs84_vertices_pgr.id,st_distance(vias_wgs84_vertices_pgr.the_geom,
-        st_geometryFromtext('POINT(${destino.lon} ${
+source::integer,
+target::integer,
+costo::double precision AS cost
+FROM vias_3115_profe84',(select o.id::integer from (select vias_3115_profe_vertices84_pgr.id,st_distance(vias_3115_profe_vertices84_pgr.geom,
+st_transform(st_geometryFromtext('POINT( ${destino.lon} ${
     destino.lat
-  })',4326)) from vias_wgs84_vertices_pgr order by st_distance LIMIT 1 ) as o),
-(select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip_wgs.geom)
-from  vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id='${parada}' order by 2 asc limit 1  )as d), false, false) 
-a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)`;
+  })',4326),4326)) from vias_3115_profe_vertices84_pgr order by st_distance LIMIT 1 ) as o),
+(select d.id ::integer from (select vias_3115_profe_vertices84_pgr.id, st_distance(vias_3115_profe_vertices84_pgr.geom,paradas_mototrip_wgs.geom)
+from vias_3115_profe_vertices84_pgr, paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${parada}' order by 2 asc limit 1 )as d), false, false) 
+a LEFT JOIN vias_3115_profe84 b ON (a.id2 = b.gid)`;
   return selectQuery(null, subquery, "seq");
 };
 
@@ -87,18 +87,20 @@ order by distancia`;
 
 const getPrecioDestino = (destino, parada) => {
   if (!destino || !parada) return;
-  let query = `SELECT (st_length(st_transform(st_union(o.geom),3115))/1000)* 2000 as precio from (SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
-  SELECT gid AS id,
-  source::integer,
-  target::integer,
-  costo::double precision AS cost
-  FROM vias_wgs84',(select o.id::integer from (select vias_wgs84_vertices_pgr.id,st_distance(vias_wgs84_vertices_pgr.the_geom,
-  st_geometryFromtext('POINT(${destino.lon} ${
+  let query = `
+ SELECT (st_length(st_transform(st_union(o.geom),3115))/1000)* 2000 as precio from (
+SELECT seq,id1 as node, id2 as edge, cost, b.geom FROM pgr_dijkstra('
+SELECT gid AS id,
+source::integer,
+target::integer,
+costo::double precision AS cost
+FROM vias_3115_profe84',(select o.id::integer from (select vias_3115_profe_vertices84_pgr.id,st_distance(vias_3115_profe_vertices84_pgr.geom,
+st_transform(st_geometryFromtext('POINT( ${destino.lon} ${
     destino.lat
-  })',4326)) from vias_wgs84_vertices_pgr order by st_distance LIMIT 1 ) as o),
-  (select d.id ::integer from (select vias_wgs84_vertices_pgr.id, st_distance(vias_wgs84_vertices_pgr.the_geom,paradas_mototrip_wgs.geom)
-  from vias_wgs84_vertices_pgr,paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id='${parada}' order by 2 asc limit 1 )as d), false, false)
-  a LEFT JOIN vias_wgs84 b ON (a.id2 = b.gid)) as o`;
+  })',4326),4326)) from vias_3115_profe_vertices84_pgr order by st_distance LIMIT 1 ) as o),
+(select d.id ::integer from (select vias_3115_profe_vertices84_pgr.id, st_distance(vias_3115_profe_vertices84_pgr.geom,paradas_mototrip_wgs.geom)
+from vias_3115_profe_vertices84_pgr, paradas_mototrip_wgs WHERE paradas_mototrip_wgs.id= '${parada}' order by 2 asc limit 1 )as d), false, false) 
+a LEFT JOIN vias_3115_profe84 b ON (a.id2 = b.gid)) as o`;
   return query;
 };
 
